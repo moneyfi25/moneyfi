@@ -1,0 +1,42 @@
+{
+  "strategy_summary": "This investment strategy focuses on a balanced approach, combining equity mutual funds, bonds, and hybrid funds to achieve moderate risk and growth potential. The goal is to leverage moderate risk investments to meet the target amount of ₹1,000,000 in 5 years.",
+  "expected_return": "12",
+  "allocation": {
+    "Equity Mutual Funds": [
+      {
+        "name": "Axis Bluechip Fund",
+        "percentage": 40,
+        "reason": "Large-cap funds provide stability and moderate growth, suitable for a moderate risk profile."
+      },
+      {
+        "name": "Mirae Asset Emerging Bluechip Fund",
+        "percentage": 20,
+        "reason": "Mid-cap exposure for higher growth potential while maintaining a moderate risk profile."
+      }
+    ],
+    "Hybrid Funds": [
+      {
+        "name": "ICICI Prudential Equity & Debt Fund",
+        "percentage": 20,
+        "reason": "Hybrid funds offer a balanced approach by investing in both equities and debt, providing risk mitigation and growth."
+      }
+    ],
+    "Debt Funds": [
+      {
+        "name": "HDFC Short Term Debt Fund",
+        "percentage": 15,
+        "reason": "Debt funds add stability to the portfolio with lower risk and regular income."
+      }
+    ],
+    "Gold ETFs": [
+      {
+        "name": "Nippon India Gold ETF",
+        "percentage": 5,
+        "reason": "Gold ETFs provide a hedge against market volatility and inflation."
+      }
+    ]
+  },
+  "liquidity_notes": "Most mutual funds and ETFs have no lock-in period, providing high liquidity, except for potential exit load fees if redeemed before a certain period.",
+  "rebalancing": "Recommended rebalancing frequency is annually to ensure alignment with risk tolerance and market conditions.",
+  "risk_profile_explanation": "This portfolio is designed to match a moderate risk appetite by diversifying across asset classes. The inclusion of equity funds targets growth, while hybrid and debt funds provide stability and risk mitigation."
+}
