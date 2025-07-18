@@ -1,6 +1,7 @@
 from toolkit import fetch_risk_scores, fetch_return_scores
 from langchain.agents import initialize_agent, Tool, AgentType
 from dotenv import load_dotenv
+import os
 load_dotenv()
 from langchain_community.chat_models import ChatOpenAI
 
@@ -39,7 +40,7 @@ tools = [
 
 agent = initialize_agent(
     tools=tools,
-    llm=ChatOpenAI(model="gpt-4o", temperature=0.2),
+    llm=ChatOpenAI(model="gpt-4o", temperature=0.2, openai_api_key=os.getenv("OPENAI_API_KEY")),
     agent=AgentType.OPENAI_FUNCTIONS,
     handle_parsing_errors=True,
     verbose=True
