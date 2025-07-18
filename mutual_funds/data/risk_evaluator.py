@@ -1,7 +1,7 @@
-import requests
 import statistics
 import sys
 import os
+from pymongo import UpdateOne
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from db import mutual_funds_collection
 
@@ -50,7 +50,6 @@ def risk_score(fund, expense_median):
 def evaluate_all_risk():
     funds = fetch_funds()
     expense_med = compute_expense_median(funds)
-    total_checks = 6
 
     evaluated = []
     for f in funds:
@@ -58,18 +57,29 @@ def evaluate_all_risk():
         evaluated.append({
             "name": f["name"],
             "score": s,
-            # relative_score 0.0 (best) → 1.0 (worst)
-            "relative_score": s / total_checks
         })
 
-    # sort by ascending score (lowest-risk first)
     return sorted(evaluated, key=lambda x: x["score"])
 
+def push_risk_scores():
+    evaluated = evaluate_all_risk()  
+    ops = []
+    for f in evaluated:
+        ops.append(
+            UpdateOne(
+                {"name": f["name"]},                        # match by fund name
+                {"$set": {
+                    "risk_score": f["score"],               # store absolute score
+                }},
+                upsert=False                                 # or True if you want to insert missing docs
+            )
+        )
+    # 3) send them in one bulk_write
+    if ops:
+        result = mutual_funds_collection.bulk_write(ops)
+        print(f"Matched:  {result.matched_count}")
+        print(f"Modified: {result.modified_count}")
 
 if __name__ == "__main__":
-    for fund in evaluate_all_risk():
-        print(
-            f"{fund['name']}: "
-            f"score={fund['score']} "
-            f"(relative={fund['relative_score']:.2f})"
-        )
+    push_risk_scores()
+    print("Risk scores updated successfully.")

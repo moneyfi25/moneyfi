@@ -1,38 +1,39 @@
-from typing import Union
+from pymongo import MongoClient, ASCENDING, DESCENDING
 import json, ast
 from langchain_core.tools import tool
-from langchain.chains import RetrievalQA
-from langchain.chat_models import ChatOpenAI
-from data.vector_db import load_mutual_funds_vectorstore
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from db import mutual_funds_collection
 
-vectordb = load_mutual_funds_vectorstore("mutual_funds_db")
-retriever = vectordb.as_retriever(search_type="similarity", search_kwargs={"k": 10})
-qa_chain = RetrievalQA.from_chain_type(
-    llm=ChatOpenAI(model="gpt-4o", temperature=0),
-    chain_type="map_reduce",
-    retriever=retriever,
-    return_source_documents=False
-)
-
-@tool
-def screen_mutual_funds() -> str:
-    """ Filter Mutual Funds based on 1y return.
-     Returns a list of dicts:
-      - scheme_name: str
-      - return_1y_regular: float
-      - return_3y_regular: float
-      - return_5y_regular: float
+@tool("fetch_risk_scores", return_direct=True)
+def fetch_risk_scores(top_n: int = 5) -> str:
     """
+    Fetch the top_n mutual funds sorted by ascending risk_score (lowest risk first).
+    Returns a JSON array of objects: [{"name":..., "risk_score":...}, ...].
+    """
+    cursor = mutual_funds_collection.find(
+        {"risk_score": {"$exists": True}}
+    ).sort("risk_score", ASCENDING).limit(int(top_n))
 
-    # 5) Build a natural-language query
-    query = (
-        f"""Filter Mutual Funds with a 1-year return greater than 3%.
-      - scheme_name: str
-      - return_1y_regular: float
-      - return_3y_regular: float
-      - return_5y_regular: float"""
-    )
+    results = [
+        {"name": doc["name"], "risk_score": doc["risk_score"]}
+        for doc in cursor
+    ]
+    return json.dumps(results)
 
-    # 6) Run the QA chain and return results
-    response = qa_chain.invoke({"query": query})
-    return response['result'] if isinstance(response, dict) else str(response)
+@tool("fetch_return_scores", return_direct=True)
+def fetch_return_scores(top_n: int = 5) -> str:
+    """
+    Fetch the top_n mutual funds sorted by descending return_score (highest returns first).
+    Returns a JSON array of objects: [{"name": ..., "return_score": ...}, ...].
+    """
+    cursor = mutual_funds_collection.find(
+        {"return_score": {"$exists": True}}
+    ).sort("return_score", DESCENDING).limit(int(top_n))
+
+    results = [
+        {"name": doc["name"], "return_score": doc["return_score"]}
+        for doc in cursor
+    ]
+    return json.dumps(results)
