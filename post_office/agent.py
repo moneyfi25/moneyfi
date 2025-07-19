@@ -1,7 +1,6 @@
 from langchain.agents import initialize_agent, Tool, AgentType
-from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
-from toolkit import screen_post_office_schemes, find_post_office_schemes
+from .toolkit import find_post_office_schemes
 from dotenv import load_dotenv
 load_dotenv()
 

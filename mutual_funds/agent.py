@@ -1,4 +1,4 @@
-from toolkit import fetch_risk_scores, fetch_return_scores
+from .toolkit import fetch_risk_scores, fetch_return_scores
 from langchain.agents import initialize_agent, Tool, AgentType
 from dotenv import load_dotenv
 import os
@@ -27,16 +27,6 @@ tools = [
         ),
     ),
 ]
-
-# SYSTEM  = """
-# You are a Mutual‐Funds assistant.  
-# Always respond with _only_ valid JSON.  
-# Do not wrap your answer in markdown or prose.  
-# If I ask for risk scores, return something like:  
-#   [ { "name": "...", "risk_score": 2 }, … ]  
-# If I ask for return scores, return:  
-#   [ { "name": "...", "return_score": 85.3 }, … ]
-# """
 
 agent = initialize_agent(
     tools=tools,

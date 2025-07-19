@@ -3,17 +3,6 @@ import json, ast
 from langchain_core.tools import tool
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
-from data.vector_db import load_post_office_vectorstore
-
-# reload your vector store & build the QA chain once
-vectordb = load_post_office_vectorstore("post_office_schemes_db")
-retriever = vectordb.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-qa_chain = RetrievalQA.from_chain_type(
-    llm=ChatOpenAI(model="gpt-4o", temperature=0),
-    chain_type="stuff",
-    retriever=retriever,
-    return_source_documents=False
-)
 
 @tool
 def find_post_office_schemes(raw_input: str) -> str:
