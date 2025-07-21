@@ -1,4 +1,4 @@
-from .toolkit import fetch_top_sgbs
+from toolkit import fetch_top_sgbs
 from langchain.agents import initialize_agent, Tool, AgentType
 from dotenv import load_dotenv
 import os
