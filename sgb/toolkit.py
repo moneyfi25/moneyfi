@@ -1,5 +1,4 @@
 from pymongo import ASCENDING, DESCENDING
-import json
 from langchain_core.tools import tool
 import os
 import sys
