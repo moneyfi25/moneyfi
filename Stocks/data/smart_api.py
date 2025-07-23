@@ -20,17 +20,15 @@ if session_data and "data" in session_data:
     # No need to access .session.headers manually!
     print("Login successful")
 
-    # Historical candle params
-    params = {
+    historical_data = obj.getCandleData({
         "exchange": "NSE",
-        "symboltoken": "3045",  
+        "symboltoken": "2885",  # ✅ not `token` – must be `symboltoken`
         "interval": "ONE_DAY",
-        "fromdate": "2025-07-16 13:00", 
-        "todate": "2025-07-21 13:30"
-    }
+        "fromdate": "2025-07-15 09:15",
+        "todate": "2025-07-21 15:30"
+    })
 
-    result = obj.getCandleData(params)
-    print("Historical Data:", result)
+    print("Historical Data:", historical_data)
 
 else:
     print("Login failed:", session_data)
