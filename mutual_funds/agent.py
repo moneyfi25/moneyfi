@@ -1,4 +1,4 @@
-from .toolkit import fetch_risk_scores, fetch_return_scores
+from toolkit import fetch_returns
 from langchain.agents import initialize_agent, Tool, AgentType
 from dotenv import load_dotenv
 import os
@@ -7,25 +7,15 @@ from langchain_community.chat_models import ChatOpenAI
 
 tools = [
     Tool(
-        name="fetch_risk_scores",
-        func=fetch_risk_scores,
+        name="fetch_returns_tool",
+        func=fetch_returns,
         description=(
-            "Fetch the top N mutual funds sorted by ascending risk score (lowest risk first). "
-            "Returns a JSON array of objects: [{'name':..., 'risk_score':...}, ...]. "
-            "You can specify the number of funds to return using the 'top_n'"
-            " parameter, which defaults to 5."
+            "Fetch all the mutual funds returns. "
+            "Returns a JSON array of objects: [{'fund_name':..., '1_week_return':..., '1_month_return':..., "
+            "'3_month_return':..., '6_month_return':..., '1_year_return':...}, ...]. "
+            "This tool provides a comprehensive overview of mutual fund performance over various time periods."
         ),
-    ),
-    Tool(
-        name="fetch_return_scores",
-        func=fetch_return_scores,
-        description=(
-            "Fetch the top N mutual funds sorted by descending return score (highest returns first). "
-            "Returns a JSON array of objects: [{'name':..., 'return_score':...}, ...]. "
-            "You can specify the number of funds to return using the 'top_n'"
-            " parameter, which defaults to 5."
-        ),
-    ),
+    )
 ]
 
 agent = initialize_agent(
