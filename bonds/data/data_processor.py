@@ -76,6 +76,6 @@ def score_bond(bond):
 
 if __name__ == "__main__":
     bonds = list(bonds_collection.find())
-    for bond in bonds:
-        scored = score_bond(bond)
-        bonds_collection.update_one({"_id": bond["_id"]}, {"$set": {"score": scored["bond_score"]}})
+    # for bond in bonds:
+    #     scored = score_bond(bond)
+    #     bonds_collection.update_one({"_id": bond["_id"]}, {"$set": {"score": scored["bond_score"]}})

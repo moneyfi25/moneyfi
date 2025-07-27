@@ -208,7 +208,7 @@ def push_to_mongo(df: pd.DataFrame) -> list:
 
 def main():
     # for corporate bonds
-    filepath = "MW-Bonds-on-CM-21-Jul-2025.csv"
+    filepath = "MW-Bonds-on-CM-27-Jul-2025.csv"
     df = load_csv(filepath)
     filters = {
         "CREDIT_RATING": ("ne", "NA"),
@@ -220,7 +220,7 @@ def main():
 
 
     # for government bonds
-    filepath_gsec = "MW-G-Sec-on-CM-21-Jul-2025.csv"
+    filepath_gsec = "MW-G-Sec-on-CM-27-Jul-2025.csv"
     df_gsec = load_csv_gsec(filepath_gsec)
     filters_gsec = {
         "VOLUME": ("gt", 1000),
