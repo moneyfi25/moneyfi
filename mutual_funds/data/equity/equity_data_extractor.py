@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 from db import mutual_funds_collection, etf_collection
 import pandas as pd
 from pymongo import UpdateOne
@@ -38,7 +38,7 @@ def load_csv_risk(filepath: str) -> pd.DataFrame:
     df.drop("Fund Risk Grade", axis=1, inplace=True)
     df.drop("Fund Return Grade", axis=1, inplace=True)
     df.drop("Riskometer", axis=1, inplace=True)
-    df.columns = ["fund_name", "standard_deviation", "shrape_ratio", "sortino_ratio", "beta", "alpha", "information_ratio", "r_squared"]
+    df.columns = ["fund_name", "standard_deviation", "sharpe_ratio", "sortino_ratio", "beta", "alpha", "information_ratio", "r_squared"]
     df["standard_deviation"] = (
         df["standard_deviation"]
         .astype(str)            
@@ -53,8 +53,8 @@ def load_csv_risk(filepath: str) -> pd.DataFrame:
         .str.replace(',', '')
         .str.replace(r'[^\d\.]', '', regex=True)  
     )
-    df["shrape_ratio"] = pd.to_numeric(df["shrape_ratio"], errors="coerce")
-    df["shrape_ratio"] = df["shrape_ratio"].fillna('')
+    df["sharpe_ratio"] = pd.to_numeric(df["sharpe_ratio"], errors="coerce")
+    df["sharpe_ratio"] = df["sharpe_ratio"].fillna('')
     df["sortino_ratio"] = (
         df["sortino_ratio"]
         .astype(str)            
@@ -286,7 +286,7 @@ def push_to_mongo(df: pd.DataFrame,
 
 def main():
     # Load mutual fund details and returns, filter, and push to MongoDB
-    details_filepath = "equity/equity-24-Jul-2025--2010.csv"
+    details_filepath = "equity-24-Jul-2025--2010.csv"
     df = load_csv(details_filepath)
     mf_filters = {
         "launch_date": ("notnull", None),
@@ -304,7 +304,7 @@ def main():
     print("ETF IDs:", etf_ids)
 
     # Load returns data
-    returns_filepath = "equity/equity-24-Jul-2025--0832.csv"
+    returns_filepath = "equity-24-Jul-2025--0832.csv"
     df_returns = load_csv_returns(returns_filepath)
     mf_filters = {
         "fund_name": ("does_not_contain", "ETF"),
@@ -322,7 +322,7 @@ def main():
     print("ETF Returns IDs:", etf_ids)
 
     # Load long term returns
-    long_term_returns_filepath = "equity/equity-24-Jul-2025--0832-2.csv"
+    long_term_returns_filepath = "equity-24-Jul-2025--0832-2.csv"
     df_long_term = load_csv_long_term_returns(long_term_returns_filepath)
     print(list(df_long_term.columns))
     mf_filters = {
@@ -341,7 +341,7 @@ def main():
     print("ETF Long Term Returns IDs:", etf_ids)
 
     # Load risk parameters
-    risk_filepath = "equity/equity-24-Jul-2025--0833.csv"
+    risk_filepath = "equity-24-Jul-2025--0833.csv"
     df_risk = load_csv_risk(risk_filepath)
     print(list(df_risk.columns))
     mf_filters = {
@@ -360,7 +360,7 @@ def main():
     print("ETF Risk IDs:", etf_ids)
 
     # Load other infos
-    other_info_filepath = "equity/equity-24-Jul-2025--0833-2.csv"
+    other_info_filepath = "equity-24-Jul-2025--0833-2.csv"
     df_other_info = load_csv_others(other_info_filepath)
     print(list(df_other_info.columns))
     mf_filters = {
