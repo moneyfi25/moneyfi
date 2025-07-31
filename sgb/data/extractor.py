@@ -62,7 +62,7 @@ def push_to_mongo(df: pd.DataFrame) -> list:
     return result.inserted_ids
 
 def main():
-    filepath = "MW-SGB-19-Jul-2025.csv"
+    filepath = "MW-SGB-31-Jul-2025.csv"
     df = load_csv(filepath)
     print("Columns:", df.columns.tolist())
     filters = {

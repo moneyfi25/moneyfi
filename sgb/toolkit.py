@@ -32,7 +32,8 @@ def fetch_top_sgbs(num: int = 5) -> list[dict]:
                 "return_score": 1,
                 "LTP \n": 1,
                 "premium_percent": 1,
-                "safe_premium": 1
+                "safe_premium": 1,
+                "365 D % CHNG \n": 1
             }
         )
         .sort("return_score", -1)
@@ -46,6 +47,7 @@ def fetch_top_sgbs(num: int = 5) -> list[dict]:
             "return_score":       doc.get("return_score"),
             "last_traded_price":  doc.get("LTP \n"),
             "premium_percent":    doc.get("premium_percent"),
+            "Last 1 year Returns": doc.get("365 D % CHNG \n")
         })
 
     return results

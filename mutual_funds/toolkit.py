@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from db import mutual_funds_collection
 
 @tool("fetch_short_term_returns", return_direct=True)
-def fetch_short_term_returns() -> str:
+def fetch_short_term_returns(query_filter: str = "{}") -> str:
     """Fetch all the mutual funds and their short term returns -
     which includes returns for 1 week, 1 month, 3 months, 6 months, and 1 year.
     Returns a JSON array of objects: 
@@ -19,13 +19,13 @@ def fetch_short_term_returns() -> str:
       "1_year_return": ...},
       ...
     ]."""
-    cursor = mutual_funds_collection.find(
-        {"1_week_return": {"$exists": True}}
-    )
+    filter_dict = json.loads(query_filter) if query_filter != "{}" else {}
+    
+    cursor = mutual_funds_collection.find(filter_dict)
 
     results = [
         {"fund_name": doc["fund_name"],
-         "1_week_return": doc["1_week_return"],
+         "1_week_return": doc.get("1_week_return", None),
          "1_month_return": doc.get("1_month_return", None),
          "3_month_return": doc.get("3_month_return", None),
          "6_month_return": doc.get("6_month_return", None),
@@ -35,7 +35,7 @@ def fetch_short_term_returns() -> str:
     return json.dumps(results)
 
 @tool("fetch_long_term_returns", return_direct=True)
-def fetch_long_term_returns() -> str:
+def fetch_long_term_returns(query_filter: str = "{}") -> str:
     """Fetch all the mutual funds and their long term returns -
     which includes returns for 3 years, 5 years, and 10 years.
     Returns a JSON array of objects: 
@@ -45,13 +45,13 @@ def fetch_long_term_returns() -> str:
       "10_year_return": ...]},
       ...
     ]."""
-    cursor = mutual_funds_collection.find(
-        {"3_year_return": {"$exists": True}}
-    )
+    filter_dict = json.loads(query_filter) if query_filter != "{}" else {}
+    
+    cursor = mutual_funds_collection.find(filter_dict)
 
     results = [
         {"fund_name": doc["fund_name"],
-         "3_year_return": doc["3_year_return"],
+         "3_year_return": doc.get("3_year_return", None),
          "5_year_return": doc.get("5_year_return", None),
          "10_year_return": doc.get("10_year_return", None)}
         for doc in cursor
@@ -59,7 +59,7 @@ def fetch_long_term_returns() -> str:
     return json.dumps(results)
 
 @tool("fetch_risk_and_volatility_parameters", return_direct=True)
-def fetch_risk_and_volatility_parameters() -> str:
+def fetch_risk_and_volatility_parameters(query_filter: str = "{}") -> str:
     """Fetch all the mutual funds and their risk parameters -
     which includes Sharpe ratio, Sortino ratio, Beta, Alpha, Standard Deviation, Information ratio and r-squared.
     Returns a JSON array of objects: 
@@ -73,13 +73,13 @@ def fetch_risk_and_volatility_parameters() -> str:
       "r_squared": ...},
       ...
     ]."""
-    cursor = mutual_funds_collection.find(
-        {"shrape_ratio": {"$exists": True}}
-    )
+    filter_dict = json.loads(query_filter) if query_filter != "{}" else {}
+    
+    cursor = mutual_funds_collection.find(filter_dict)
 
     results = [
         {"fund_name": doc["fund_name"],
-         "sharpe_ratio": doc["shrape_ratio"],
+         "sharpe_ratio": doc.get("shrape_ratio", None),
          "sortino_ratio": doc.get("sortino_ratio", None),
          "beta": doc.get("beta", None),
          "alpha": doc.get("alpha", None),
@@ -91,7 +91,7 @@ def fetch_risk_and_volatility_parameters() -> str:
     return json.dumps(results)
 
 @tool("fetch_fees_and_details", return_direct=True)
-def fetch_fees_and_details() -> str:
+def fetch_fees_and_details(query_filter: str = "{}") -> str:
     """Fetch all the mutual funds and their fees and details -
     which includes expense ratio, minimum investment, fund manager and exit load.
     Returns a JSON array of objects: 
@@ -103,9 +103,9 @@ def fetch_fees_and_details() -> str:
       "fund_manager": ...},
       ...
     ]."""
-    cursor = mutual_funds_collection.find(
-        {"minimum_investment": {"$exists": True}}
-    )
+    filter_dict = json.loads(query_filter) if query_filter != "{}" else {}
+    
+    cursor = mutual_funds_collection.find(filter_dict)
 
     results = [
         {"fund_name": doc["fund_name"],
@@ -117,3 +117,11 @@ def fetch_fees_and_details() -> str:
         for doc in cursor
     ]
     return json.dumps(results)
+
+def fetch_all_categories() -> list:
+    """Fetch all unique categories from the mutual funds collection."""
+    categories = mutual_funds_collection.distinct("category")
+    return categories
+
+if __name__ == "__main__":
+    print(fetch_all_categories())

@@ -1,0 +1,28 @@
+Field,Extracted Value,Explanation with Real-Life Example
+Policy Name,HDFC Life Click 2 Retire,The name of the pension product offered by HDFC Life Insurance.
+Unique Identification Number (UIN),101L108V05,Used to uniquely identify this policy with IRDAI.
+Plan Type,"Unit Linked, Non-Participating, Individual Pension Savings Plan","It’s a ULIP that doesn’t offer bonuses or participation in profits, intended for retirement savings."
+Objective of the Plan,To build a retirement corpus through market-linked investments with an assured vesting benefit.,Helps accumulate funds during working years and converts them into pension income after vesting.
+Entry Age (Min/Max),18 to 65 years,A person aged 30 can start this plan and accumulate till vesting age.
+Vesting Age (Min/Max),45 to 75 years,"If someone enters at 35, they can select 60 or 65 years as their retirement (vesting) age."
+Policy Term / Accumulation Phase,10 to 35 years (except 11 to 14 years),A 30-year-old can choose a 25-year term and retire at 55.
+Premium Payment Term,Single Pay / 8 / 10 / 15 years,A user can choose to pay premiums for only 10 years for a 25-year policy.
+Premium Payment Modes,"Annual, Half-Yearly, Quarterly, Monthly (for Limited & Regular Pay); Single for Single Pay","Someone opting for 10-year pay can choose monthly mode like ₹2,000/month."
+Minimum / Maximum Purchase Price or Contribution,"Minimum: ₹24,000/year; Maximum: No limit","You can invest ₹50,000/year or ₹15 lakh lump sum depending on your financial capacity."
+Annuity Options Available,Immediate or Deferred Annuity (from HDFC Life or other insurer); Life Annuity based on prevailing annuity plan,"At vesting, a ₹1L corpus can be used to buy a monthly pension (e.g., ₹960/year at 8% annuity illustration)."
+Commutation Rules,Up to 60% of the corpus; balance to be used for annuity,"If corpus at vesting is ₹5L, one can take ₹3L lump sum and use ₹2L to buy annuity."
+Vesting Benefits / Maturity Benefits,Higher of Fund Value or Assured Vesting Benefit,Mr. Ramesh gets ₹3.42L fund value at 8% returns vs ₹1.72L assured; higher value is paid.
+Death Benefit,Higher of Fund Value or 105% of premiums paid,"If premiums total ₹1L, nominee will get ₹1.05L or fund value, whichever is higher."
+Charges,Fund Management Charge: 1.35% p.a.; Investment Guarantee Charge: 0.5% p.a.; No entry/exit/admin charges,"Charges reduce fund value slightly over time, but no hidden fees or admin costs."
+Surrender Rules,Allowed anytime; during lock-in credited to Discontinued Fund; post lock-in treated like vesting proceeds,"If policy is surrendered in year 3, proceeds are paid after year 5."
+Loan Availability,Not Available,No loan facility is offered under this policy.
+Riders,Not Available,No add-on covers like accidental or disability riders in this pension plan.
+Free Look Period,30 days,Policyholder can cancel the policy within 30 days for a refund after deductions.
+Grace Period,15 days (monthly); 30 days (others),"If you miss a quarterly payment, you get 30 days to pay without policy lapse."
+Tax Benefits,May be available under Section 80CCC and Section 10(10A),Premiums paid may qualify for deduction under Sec 80CCC; annuity payouts may be taxable.
+Suicide Clause,Only fund value payable if death due to suicide within 12 months,"If policyholder dies by suicide in first year, nominee gets fund value only, not 105% of premiums."
+Key Features & Benefits,"- Online Pension Plan
+- No Entry, Exit or Admin Charges
+- Assured Vesting Benefit
+- Flexibility to choose pay terms and policy terms
+- Option to start from age 18; vest as early as 45","A 25-year-old can start investing with flexible premiums, and retire at 50 with market-linked growth + assured benefits."

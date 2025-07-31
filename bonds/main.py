@@ -1,4 +1,7 @@
-from agent import agent
+from .agent import initialize_bonds_agent
+from langchain.tools import tool
+import json 
+import ast
 
 query_template = """
 You are a Bonds Intelligence Agent trained to analyze both Government Securities (G-Secs) and Corporate Bonds 
@@ -8,10 +11,11 @@ Your objective is to recommend the best bonds to invest in based on the user’s
 considering return expectations, risk appetite, and time horizon.
 
 ✅ User Input Parameters:
-- Investment Objective: {objective} (e.g., capital preservation, regular income, tax-efficiency)
-- Investment Horizon: {horizon} (short-term <3 years, medium-term 3–5 years, long-term >5 years)
-- Risk Appetite: {risk} (low, moderate, high)
-- Preference (optional): {special_prefs} (e.g., G-Sec only, AAA-rated corporates, high YTM, inflation-protected, short duration)
+- Investment Objective: hedge against inflation
+- Investment Horizon: {horizon} 
+- Monthly Investment Amount: ₹{monthly_investment}
+- Risk Appetite: {risk} 
+- Preference (optional): {special_prefs} 
 
 🛠️ Available Tools:
 You MUST use the following tools effectively:
@@ -38,16 +42,36 @@ You MUST use the following tools effectively:
 - Any warnings or limitations (e.g., low liquidity, callable bond, reinvestment risk).
 """
 
-user_inputs = {
-    "objective": "hedge against inflation",
-    "horizon": "5 years",
-    "risk": "moderate",
-    "special_prefs": "-"
-}
+# user_inputs = {
+#     "objective": "hedge against inflation",
+#     "horizon": "5 years",
+#     "risk": "moderate",
+#     "special_prefs": "-"
+# }
 
-query = query_template.format(**user_inputs)
+# query = query_template.format(**user_inputs)
 
-response = agent.invoke({
-    "input": query
-})
-print(response.get("output", "No response from Bonds agent."))
+# response = agent.invoke({
+#     "input": query
+# })
+# print(response.get("output", "No response from Bonds agent."))
+
+@tool
+def bonds_tool(user_inputs):
+    """
+    This tool is used to interact with the Bonds Intelligence Agent.
+    It takes user inputs and returns bond recommendations based on the query template.
+    """
+    if isinstance(user_inputs, str):
+        try:
+            user_inputs = json.loads(user_inputs)
+        except json.JSONDecodeError:
+            try:
+                user_inputs = ast.literal_eval(user_inputs)
+            except (ValueError, SyntaxError):
+                print("❌ Failed to parse user_inputs string")
+                return "Error: Could not parse user inputs"
+    query = query_template.format(**user_inputs)
+    agent = initialize_bonds_agent()
+    response = agent.invoke({"input": query})
+    return response.get("output", "No response from Bonds agent.")
