@@ -1,7 +1,12 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_executor import Executor
+from flask_socketio import SocketIO, emit
+import uuid
+from threading import Lock
+
+from agent_entry import run_orc_agent
 from db import mutual_funds_collection
-import json
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={
@@ -13,52 +18,13 @@ CORS(app, supports_credentials=True, resources={
     }
 })
 
-@app.route('/api/post_mutual_fund', methods=['POST'])
-def post_mutual_fund():
-    data = request.json
+# Initialize Flask-Executor
+executor = Executor(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-    # build the document
-    doc = {
-        "name": data["name"].strip(),
-        "metrics": {
-            "alpha": {
-                "investment": float(data["alpha"]["investment"]),
-                "category": float(data["alpha"]["category"]),
-            },
-            "beta": float(data["beta"]),
-            "standard_deviation": {
-                "investment": float(data["standard_deviation"]["investment"]),
-                "category": float(data["standard_deviation"]["category"]),
-            },
-            "sharpe_ratio": {
-                "investment": float(data["sharpe_ratio"]["investment"]),
-                "category": float(data["sharpe_ratio"]["category"]),
-            },
-            "maximum_drawdown": float(data["maximum_drawdown"]),
-            "expense_ratio": float(data["expense_ratio"]),
-        },
-        "returns": {
-            "1y": {
-                "investment": float(data["returns"]["1y"]["investment"]),
-                "category": float(data["returns"]["1y"]["category"]),
-            },
-            "3y": {
-                "investment": float(data["returns"]["3y"]["investment"]),
-                "category": float(data["returns"]["3y"]["category"]),
-            },
-            "5y": {
-                "investment": float(data["returns"]["5y"]["investment"]),
-                "category": float(data["returns"]["5y"]["category"]),
-            }
-        },
-    }
-
-    # insert into MongoDB
-    result = mutual_funds_collection.insert_one(doc)
-    return jsonify({
-        "status": "success",
-        "inserted_id": str(result.inserted_id)
-    }), 201
+# Initialize response store
+response_store = {}
+store_lock = Lock()
 
 @app.route('/api/mutual_funds', methods=['GET'])
 def get_all_mutual_funds():
@@ -69,6 +35,126 @@ def get_all_mutual_funds():
         mutual_funds_list.append(fund)
     return jsonify({"mutual_funds": mutual_funds_list}), 200
 
+@app.route('/sendUserInputs', methods=['POST'])
+def send_user_inputs():
+    try:
+        data = request.get_json()
+        user_inputs = {
+            "objective": data.get("objective", {}).get("currentKey", ""),
+            "risk": data.get("risk", {}).get("currentKey", ""),
+            "investment_horizon": data.get("yearsToAchieve", ""),
+            "monthly_investment": data.get("monthlyInvestment", 1000),
+            "age": data.get("age", 0),
+        }
+        
+        # Generate unique task ID
+        task_id = str(uuid.uuid4())
+        
+        # Store initial status
+        with store_lock:
+            response_store[task_id] = {
+                "status": "processing",
+                "result": None,
+                "error": None
+            }
+
+        # Submit async task
+        future = executor.submit(run_orc_agent_with_callback, user_inputs, task_id)
+        
+        return jsonify({
+            "status": "processing", 
+            "task_id": task_id,
+            "message": "User inputs are being processed"
+        }), 202
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+def run_orc_agent_with_callback(user_inputs, task_id):
+    """Wrapper function to handle the response and store it"""
+    try:
+        result = run_orc_agent(user_inputs)
+        with store_lock:
+            response_store[task_id] = {
+                "status": "completed",
+                "result": result,
+                "error": None
+            }
+        return result
+    except Exception as e:
+        with store_lock:
+            response_store[task_id] = {
+                "status": "error",
+                "result": None,
+                "error": str(e)
+            }
+        raise
+
+@app.route('/startTask', methods=['POST'])
+def start_task():
+    try:
+        data = request.get_json()
+        user_inputs = data.get("user_inputs", {})
+        
+        # Parse user inputs
+        parsed_inputs = {
+            "objective": user_inputs.get("objective", {}).get("currentKey", ""),
+            "risk": user_inputs.get("risk", {}).get("currentKey", ""),
+            "investment_horizon": user_inputs.get("yearsToAchieve", ""),
+            "monthly_investment": user_inputs.get("monthlyInvestment", 1000),
+            "age": user_inputs.get("age", 0),
+        }
+        print("📤 Parsed user inputs:", parsed_inputs)
+
+        # Generate unique task ID
+        task_id = str(uuid.uuid4())
+        
+        # Store initial status
+        with store_lock:
+            response_store[task_id] = {
+                "status": "processing",
+                "result": None,
+                "error": None
+            }
+
+        # Submit async task
+        future = executor.submit(run_orc_agent_with_callback, parsed_inputs, task_id)
+        
+        return jsonify({
+            "status": "processing", 
+            "task_id": task_id,
+            "message": "User inputs are being processed"
+        }), 202
+
+    except Exception as e:
+        print("❌ Error in /startTask:", str(e))
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/getResult/<task_id>', methods=['GET'])
+def get_result(task_id):
+    """Endpoint to check task status and get result"""
+    with store_lock:
+        task_data = response_store.get(task_id)
+    
+    if not task_data:
+        return jsonify({"error": "Task not found"}), 404
+    
+    if task_data["status"] == "processing":
+        return jsonify({
+            "status": "processing",
+            "message": "Task is still being processed"
+        }), 202
+    elif task_data["status"] == "completed":
+        return jsonify({
+            "status": "completed",
+            "result": task_data["result"]
+        }), 200
+    elif task_data["status"] == "error":
+        return jsonify({
+            "status": "error",
+            "error": task_data["error"]
+        }), 500
+
 @app.route('/api/screener', methods=['POST'])
 def screener():
     try:
@@ -78,8 +164,6 @@ def screener():
         if not all(k in data for k in ('goalAmount', 'monthlyInvestment', 'yearsToAchieve')):
             return jsonify({"error": "Missing required fields"}), 400
 
-        # result = run_screener_agent(data)
-        # return jsonify(result), 200 if result["status"] == "success" else 500
         return jsonify({
             "status": "success",
             "message": "Screener functionality is not implemented yet."
@@ -89,4 +173,4 @@ def screener():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    socketio.run(app, debug=True, port=5000)

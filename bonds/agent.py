@@ -1,4 +1,4 @@
-from toolkit import fetch_ytm, fetch_coupon, fetch_diff_ltp_face, fetch_maturity
+from .toolkit import fetch_ytm, fetch_coupon, fetch_diff_ltp_face, fetch_maturity
 from langchain.agents import initialize_agent, Tool, AgentType
 from dotenv import load_dotenv
 import os
@@ -59,10 +59,12 @@ tools = [
     )
 ]
 
-agent = initialize_agent(
-    tools=tools,
-    llm=ChatOpenAI(model="gpt-4o", temperature=0.2, openai_api_key=os.getenv("OPENAI_API_KEY")),
-    agent=AgentType.OPENAI_FUNCTIONS,
-    handle_parsing_errors=True,
-    verbose=True
-)
+def initialize_bonds_agent():
+    print("🔧 Initializing Bonds Agent...")
+    return initialize_agent(
+        tools=tools,
+        llm=ChatOpenAI(model="gpt-4o-mini", temperature=0.2, openai_api_key=os.getenv("OPENAI_API_KEY")),
+        agent=AgentType.OPENAI_FUNCTIONS,
+        handle_parsing_errors=True,
+        verbose=True
+    )

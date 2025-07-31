@@ -47,8 +47,8 @@ def load_csv_risk(filepath: str) -> pd.DataFrame:
     )
     df["standard_deviation"] = pd.to_numeric(df["standard_deviation"], errors="coerce")
     # df["standard_deviation"] = df["standard_deviation"].fillna('')
-    df["shrape_ratio"] = (
-        df["shrape_ratio"]
+    df["sharpe_ratio"] = (
+        df["sharpe_ratio"]
         .astype(str)            
         .str.replace(',', '')
         .str.replace(r'[^\d\.]', '', regex=True)  
@@ -113,23 +113,25 @@ def load_csv_long_term_returns(filepath: str) -> pd.DataFrame:
         df["3_year_return"]
         .astype(str)            
         .str.replace(',', '')
-        .str.replace(r'[^\d\.]', '', regex=True)  
+        .str.replace(r'[^\d\.\-]', '', regex=True)  # Allow digits, periods, and negative signs
     )
     df["3_year_return"] = pd.to_numeric(df["3_year_return"], errors="coerce")
     # df["3_year_return"] = df["3_year_return"].fillna('')
+
     df["5_year_return"] = (
         df["5_year_return"]
         .astype(str)            
         .str.replace(',', '')
-        .str.replace(r'[^\d\.]', '', regex=True)  
+        .str.replace(r'[^\d\.\-]', '', regex=True)  # Allow digits, periods, and negative signs
     )
     df["5_year_return"] = pd.to_numeric(df["5_year_return"], errors="coerce")
     df["5_year_return"] = df["5_year_return"].fillna('')
+
     df["10_year_return"] = (
         df["10_year_return"]
         .astype(str)            
         .str.replace(',', '')   
-        .str.replace(r'[^\d\.]', '', regex=True)  
+        .str.replace(r'[^\d\.\-]', '', regex=True)  # Allow digits, periods, and negative signs
     )
     df["10_year_return"] = pd.to_numeric(df["10_year_return"], errors="coerce")
     df["10_year_return"] = df["10_year_return"].fillna('')
@@ -149,39 +151,43 @@ def load_csv_returns(filepath: str) -> pd.DataFrame:
         df["1_week_return"]
         .astype(str)
         .str.replace(',', '')            
-        .str.replace(r'[^\d\.]', '', regex=True)  
+        .str.replace(r'[^\d\.\-]', '', regex=True)  # Allow digits, periods, and negative signs
     )
     df["1_week_return"] = pd.to_numeric(df["1_week_return"], errors="coerce")
-    # df["1_week_return"] = df["1_week_return"].fillna('')
+    df["1_week_return"] = df["1_week_return"].fillna('')
+
     df["1_month_return"] = (
         df["1_month_return"]
         .astype(str)
         .str.replace(',', '')            
-        .str.replace(r'[^\d\.]', '', regex=True)  
+        .str.replace(r'[^\d\.\-]', '', regex=True)  # Allow digits, periods, and negative signs
     )
     df["1_month_return"] = pd.to_numeric(df["1_month_return"], errors="coerce")
     df["1_month_return"] = df["1_month_return"].fillna('')
+
     df["3_month_return"] = (
         df["3_month_return"]
         .astype(str)            
         .str.replace(',', '')
-        .str.replace(r'[^\d\.]', '', regex=True)  
+        .str.replace(r'[^\d\.\-]', '', regex=True)  # Allow digits, periods, and negative signs
     )
     df["3_month_return"] = pd.to_numeric(df["3_month_return"], errors="coerce")
     df["3_month_return"] = df["3_month_return"].fillna('')
+
     df["6_month_return"] = (
         df["6_month_return"]
         .astype(str)            
         .str.replace(',', '')
-        .str.replace(r'[^\d\.]', '', regex=True)  
+        .str.replace(r'[^\d\.\-]', '', regex=True)  # Allow digits, periods, and negative signs
     )
     df["6_month_return"] = pd.to_numeric(df["6_month_return"], errors="coerce")
     df["6_month_return"] = df["6_month_return"].fillna('')
+
     df["1_year_return"] = (
         df["1_year_return"]
         .astype(str)            
-        .str.replace(',', '')
-        .str.replace(r'[^\d\.]', '', regex=True)  
+        .str.replace(',', '')  # Remove commas
+        .str.replace(r'[^\d\.\-]', '', regex=True)  # Allow digits, periods, and negative signs
     )
     df["1_year_return"] = pd.to_numeric(df["1_year_return"], errors="coerce")
     df["1_year_return"] = df["1_year_return"].fillna('')
@@ -285,8 +291,10 @@ def push_to_mongo(df: pd.DataFrame,
     return new_ids
 
 def main():
-    # Load mutual fund details and returns, filter, and push to MongoDB
-    details_filepath = "equity-24-Jul-2025--2010.csv"
+    # Load snapshot data
+    mutual_funds_collection.delete_many({})
+    etf_collection.delete_many({})
+    details_filepath = "equity-snapshot.csv"
     df = load_csv(details_filepath)
     mf_filters = {
         "launch_date": ("notnull", None),
@@ -304,7 +312,7 @@ def main():
     print("ETF IDs:", etf_ids)
 
     # Load returns data
-    returns_filepath = "equity-24-Jul-2025--0832.csv"
+    returns_filepath = "equity-short-term-return.csv"
     df_returns = load_csv_returns(returns_filepath)
     mf_filters = {
         "fund_name": ("does_not_contain", "ETF"),
@@ -322,7 +330,7 @@ def main():
     print("ETF Returns IDs:", etf_ids)
 
     # Load long term returns
-    long_term_returns_filepath = "equity-24-Jul-2025--0832-2.csv"
+    long_term_returns_filepath = "equity-long-term-return.csv"
     df_long_term = load_csv_long_term_returns(long_term_returns_filepath)
     print(list(df_long_term.columns))
     mf_filters = {
@@ -341,7 +349,7 @@ def main():
     print("ETF Long Term Returns IDs:", etf_ids)
 
     # Load risk parameters
-    risk_filepath = "equity-24-Jul-2025--0833.csv"
+    risk_filepath = "equity-risk.csv"
     df_risk = load_csv_risk(risk_filepath)
     print(list(df_risk.columns))
     mf_filters = {
@@ -360,7 +368,7 @@ def main():
     print("ETF Risk IDs:", etf_ids)
 
     # Load other infos
-    other_info_filepath = "equity-24-Jul-2025--0833-2.csv"
+    other_info_filepath = "equity-fees.csv"
     df_other_info = load_csv_others(other_info_filepath)
     print(list(df_other_info.columns))
     mf_filters = {
