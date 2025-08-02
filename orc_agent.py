@@ -1,6 +1,7 @@
 from sgb.main import sgb_tool
 from mutual_funds.main import mutual_funds_tool
 from bonds.main import bonds_tool
+from etf.main import etfs_tool
 from langchain.agents import initialize_agent, Tool, AgentType
 from dotenv import load_dotenv
 import os
@@ -23,7 +24,7 @@ tools = [
         name="mutual_funds_tool",
         func=mutual_funds_tool,
         description=(
-            "Use this tool to find the best mutual funds based on risk and return scores. "
+            "Use this tool to find the best mutual funds based on different parameters of risk and returns. "
             "It will return the top mutual funds according to the user's investment goals, "
             "Take user_inputs as an argument, which includes objective, horizon, age, monthly investment, risk, fund type, and special preferences."
         ),
@@ -36,7 +37,16 @@ tools = [
             "coupon rates, and other bond metrics. "
             "take user_inputs as an argument, which includes horizon, monthly investment, risk and special preferences."
         ),
-    )
+    ),
+    Tool(
+        name="etfs_tool",
+        func=etfs_tool,
+        description=(
+            "Use this tool to find the best ETFs based on different parameters of risk and returns. "
+            "It will return the top ETFs according to the user's investment goals, "
+            "Take user_inputs as an argument, which includes objective, horizon, age, monthly investment, risk, fund type, and special preferences."
+        ),
+    ),
 ]
 
 # Lazy initialization of the agent
