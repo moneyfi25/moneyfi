@@ -49,6 +49,20 @@ Mapping Guidelines:
    - Moderate: beta ≤ 1.0, alpha ≥ 1.0
    - Aggressive: beta ≤ 1.5, alpha ≥ 1.5
 
+5. **Return Guidelines (Expected Returns Based on Risk and Horizon):**
+   - **Short-term (<3 years):**
+     - Conservative: 6-month return ≥ 3%, 1-year return ≥ 5%
+     - Moderate: 6-month return ≥ 4%, 1-year return ≥ 6%
+     - Aggressive: 6-month return ≥ 5%, 1-year return ≥ 7%
+   - **Medium-term (3-7 years):**
+     - Conservative: 3-year return ≥ 6%, 5-year return ≥ 7%
+     - Moderate: 3-year return ≥ 8%, 5-year return ≥ 9%
+     - Aggressive: 3-year return ≥ 10%, 5-year return ≥ 12%
+   - **Long-term (7+ years):**
+     - Conservative: 5-year return ≥ 8%, 10-year return ≥ 9%
+     - Moderate: 5-year return ≥ 10%, 10-year return ≥ 12%
+     - Aggressive: 5-year return ≥ 12%, 10-year return ≥ 15%
+
 Instructions:
 
 - All the "category" in the mutual fund list are - ['DT-BK & PSU', 'DT-CB', 'DT-CR', 'DT-DB', 'DT-Floater', 'DT-GL',
