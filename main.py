@@ -7,6 +7,7 @@ from threading import Lock
 import os
 from agent_entry import run_orc_agent
 from db import mutual_funds_collection, result_collection
+import redis
 import json
 import pickle
 
@@ -29,8 +30,8 @@ response_store = {}
 store_lock = Lock()
 
 # Use environment variable for Redis URL in production, fallback to localhost for dev
-from upstash_redis import Redis
-redis = Redis.from_env()
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+redis_client = redis.Redis.from_url(REDIS_URL)
 
 @app.route('/api/mutual_funds', methods=['GET'])
 def get_all_mutual_funds():
@@ -236,10 +237,10 @@ def screener():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 def set_response_store(task_id, data):
-    redis.set(f"response_store:{task_id}", pickle.dumps(data), ex=3600)  # 1 hour expiry
+    redis_client.set(f"response_store:{task_id}", pickle.dumps(data), ex=3600)  # 1 hour expiry
 
 def get_response_store(task_id):
-    data = redis.get(f"response_store:{task_id}")
+    data = redis_client.get(f"response_store:{task_id}")
     if data:
         return pickle.loads(data)
     return None
