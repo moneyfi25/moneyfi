@@ -8,6 +8,9 @@ import subprocess
 import os
 from agent_entry import run_orc_agent
 from db import mutual_funds_collection, result_collection
+import redis
+import json
+import pickle
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={
@@ -27,6 +30,10 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 response_store = {}
 store_lock = Lock()
 
+# Use environment variable for Redis URL in production, fallback to localhost for dev
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+redis_client = redis.Redis.from_url(REDIS_URL)
+
 @app.route('/api/mutual_funds', methods=['GET'])
 def get_all_mutual_funds():
     mutual_funds = mutual_funds_collection.find()
@@ -37,27 +44,26 @@ def get_all_mutual_funds():
     return jsonify({"mutual_funds": mutual_funds_list}), 200
 
 def run_orc_agent_with_callback(user_inputs, task_id):
-    """Wrapper function to handle the response and store it"""
     try:
         result = run_orc_agent(user_inputs)
-        with store_lock:
-            response_store[task_id] = {
-                "status": "completed",
-                "result": result,
-                "error": None
-            }
+        set_response_store(task_id, {
+            "status": "completed",
+            "result": result,
+            "error": None
+        })
         return result
     except Exception as e:
-        with store_lock:
-            response_store[task_id] = {
-                "status": "error",
-                "result": None,
-                "error": str(e)
-            }
+        set_response_store(task_id, {
+            "status": "error",
+            "result": None,
+            "error": str(e)
+        })
         raise
 
-@app.route('/startTask', methods=['POST'])
+@app.route('/startTask', methods=['POST', 'OPTIONS'])
 def start_task():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
     try:
         data = request.get_json()
         user_inputs = data.get("user_inputs", {})
@@ -76,13 +82,11 @@ def start_task():
         task_id = str(uuid.uuid4())
         
         # Store initial status
-        with store_lock:
-            response_store[task_id] = {
-                "status": "processing",
-                "result": None,
-                "error": None
-            }
-
+        set_response_store(task_id, {
+            "status": "processing",
+            "result": None,
+            "error": None
+        })
         # Submit async task
         future = executor.submit(run_orc_agent_with_callback, parsed_inputs, task_id)
         
@@ -194,8 +198,7 @@ def get_task_result(task_id):
 @app.route('/getResult/<task_id>', methods=['GET'])
 def get_result(task_id):
     """Endpoint to check task status and get result"""
-    with store_lock:
-        task_data = response_store.get(task_id)
+    task_data = get_response_store(task_id)
     
     if not task_data:
         return jsonify({"error": "Task not found"}), 404
@@ -233,6 +236,16 @@ def screener():
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+def set_response_store(task_id, data):
+    # Use pickle for complex objects, or json.dumps for dicts
+    redis_client.set(f"response_store:{task_id}", pickle.dumps(data), ex=3600)  # 1 hour expiry
+
+def get_response_store(task_id):
+    data = redis_client.get(f"response_store:{task_id}")
+    if data:
+        return pickle.loads(data)
+    return None
 
 if __name__ == "__main__":
     socketio.run(app, debug=True, port=5000)
