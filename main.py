@@ -56,8 +56,10 @@ def run_orc_agent_with_callback(user_inputs, task_id):
             }
         raise
 
-@app.route('/startTask', methods=['POST'])
+@app.route('/startTask', methods=['POST', 'OPTIONS'])
 def start_task():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
     try:
         data = request.get_json()
         user_inputs = data.get("user_inputs", {})
