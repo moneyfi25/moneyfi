@@ -1,0 +1,48 @@
+user_inputs = {
+    "objective": "Emergency Fund",
+    "investment_horizon": "5 years",
+    "age": 22,
+    "monthly_investment": 10000,
+    "risk": "Conservative",
+    "fund_type": "-",
+    "special_prefs": "-"
+}
+Here are three conservative, 5-year Emergency Fund allocation strategies for a 22-year-old investor contributing ₹10,000 per month. All allocations use instruments whose minimums and unit prices make them feasible at this ticket size.
+
+1. “Maximum Safety” (100% Fixed Income)  
+   • 70% → Short-Duration Government Bond Mutual Fund  
+     – ₹7,000/month via SIP (min. ₹500). Maturities 1–3 years cap interest-rate risk; sovereign backing ensures principal safety.  
+   • 30% → Short-Duration AAA Corporate Bond ETF  
+     – ₹3,000/month buying ~12 units (unit price ~₹250). AAA credit rating adds ~0.5–1% yield pickup vs. gilts.  
+   Rationale: Zero equity exposure maximizes capital preservation and liquidity (daily NAV redemptions/tradable ETF units).
+
+2. “Income-Plus Lite Growth” (85% Fixed Income, 15% Equity)  
+   • 50% → Short-Duration Government Bond Fund  
+     – ₹5,000/month via SIP (min. ₹500).  
+   • 35% → Short-Duration Corporate Bond Fund (AAA)  
+     – ₹3,500/month via SIP (min. ₹500). Corporate bonds yield ~0.7% over gilts.  
+   • 15% → Low-Volatility Large-Cap Equity ETF  
+     – ₹1,500/month buying ~30 units (unit price ~₹50). Targets low-beta stocks for inflation hedge with limited downside.  
+   Rationale: 85% high-quality bonds anchor stability; 15% equity sleeve offers modest upside over 5 years.
+
+3. “Conservative Hybrid” (70% Fixed Income, 30% Hybrid)  
+   • 40% → Short-Duration Government Bond Fund  
+     – ₹4,000/month via SIP (min. ₹500).  
+   • 30% → Ultra-Short Bond ETF  
+     – ₹3,000/month buying ~15 units (unit price ~₹200). Ultra-short maturities (<3 days) and yields > savings bank rates.  
+   • 30% → Conservative Hybrid Mutual Fund  
+     – ₹3,000/month via SIP (min. ₹500). Professionally allocates up to 25% equity (blue-chips) for growth, rest in debt for stability.  
+   Rationale: 70% in bonds for capital safety; hybrid fund adds measured equity exposure while maintaining overall conservatism.
+
+Why these mixes?  
+• Feasibility: Bond funds allow SIPs from ₹500, ETFs trade in small units (₹200–₹300), equity ETFs permit ₹1,500 allocations.  
+• Risk Control: Short maturities limit interest-rate risk; equity or hybrid slices remain capped at 15–30% to respect the conservative profile.  
+• Liquidity: Daily redemptions in funds and intraday ETF trading keep money accessible.  
+
+Implementation & Monitoring:  
+• Set up SIPs on AMC/broker websites and place recurring monthly ETF buy orders.  
+• Rebalance every 6 months if any asset class deviates by >2% from target.  
+• Keep a separate cash buffer (e.g., bank sweep or ultra-short liquid fund) for immediate needs (≈5% of total).
+
+-----------------------------------------------------------------------------
+
