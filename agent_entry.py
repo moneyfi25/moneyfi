@@ -1,14 +1,38 @@
 from orc_agent import get_agent
-from stratergist.agent import get_stratergy_agent
+# from stratergist.agent import get_stratergy_agent
+
 
 query_template = """
-You are an expert Financial Investment Advisor. You know how to create a diversified portfolio based on user inputs.
+You are an expert Financial Investment Advisor.
 
+For mutual_funds_tool(user_inputs):
 user_inputs = {{
     "objective": "{objective}",
     "horizon": "{investment_horizon} years",
     "age": {age},
-    "monthly_investment": {monthly_investment},
+    "monthly_investment": {mutual_fund},
+    "risk": "{risk}",
+    "fund_type": "-",
+    "special_prefs": "-"
+}}
+
+For etfs_tool(user_inputs):
+user_inputs = {{
+    "objective": "{objective}",
+    "horizon": "{investment_horizon} years",
+    "age": {age},
+    "monthly_investment": {etf},
+    "risk": "{risk}",
+    "fund_type": "-",
+    "special_prefs": "-"
+}}
+
+For bonds_tool(user_inputs):
+user_inputs = {{  
+    "objective": "{objective}",
+    "horizon": "{investment_horizon} years",
+    "age": {age},
+    "monthly_investment": {bond},
     "risk": "{risk}",
     "fund_type": "-",
     "special_prefs": "-"
@@ -16,50 +40,50 @@ user_inputs = {{
 
 Instructions:
 1. Pass the user_inputs object as argument to the tools correctly without any error in values
-2. Use the mutual_funds_tool(user_inputs) and etfs_tool(user_inputs) for growth and bonds_tool(user_inputs) for fixed income
-3. Based on monthly_investment of ₹{monthly_investment}, break down the amount into parts according to your expertise
-4. Call ALL THREE tools (mutual_funds_tool, etfs_tool, bonds_tool) and include ALL details returned by each tool
-5. Do not summarize or filter any information from the tools - include everything
+2. Use the tools to get the best mutual funds, ETFs, and bonds based on the user's inputs
+5. If any of {mutual_fund}, {etf}, {bond} is 0, then do not call the respective tool
+6. Do not summarize or filter any information from the tools output - include EACH and EVERy detailed information provided by the tools
 
-Output Format:
-Provide your response in the following structured format:
-
-## Investment Portfolio Recommendation
-
-### Monthly Investment Allocation (₹{monthly_investment})
-- **Mutual Funds**: ₹[amount]
-- **ETFs**: ₹[amount] 
-- **Bonds**: ₹[amount]
-
-### Mutual Funds (₹[amount] Monthly Investment)
-[Include ALL mutual fund details returned by mutual_funds_tool]
-1. **[Fund Name]**
-   - **Category:** [Category]
-   - **5-Year Return:** [Return]%
-   - **Expense Ratio:** [Ratio]%
-   - **Key Metrics:** [All metrics provided by tool]
-
-[Repeat for all mutual funds returned by the tool]
-
-### ETFs (₹[amount] Monthly Investment)
-[Include ALL ETF details returned by etfs_tool]
-1. **[ETF Name]**
-   - **3-Year Return:** [Return]%
-   - **Expense Ratio:** [Ratio]%
-   - **Standard Deviation:** [Value]
-   - **Key Metrics:** [All metrics provided by tool]
-
-[Repeat for all ETFs returned by the tool]
-
-### Bonds (₹[amount] Monthly Investment)
-[Include ALL bond details returned by bonds_tool]
-1. **[Bond Name]**
-   - **YTM:** [Rate]%
-   - **Coupon Rate:** [Rate]%
-   - **Maturity Date:** [Date]
-   - **Additional Details:** [All details provided by tool]
-
-[Repeat for all bonds returned by the tool]
+Produce your recommendation strictly as valid JSON, matching this schema exactly:
+{{
+  "Investment Portfolio Recommendation": {{
+    "Monthly Investment Allocation": {{
+      "Mutual Funds": <number>,
+      "ETFs": <number>,
+      "Bonds": <number>
+    }},
+    "Mutual Funds Details": [
+      {{
+        "Fund Name": "<string>",
+        "Category": "<string>",
+        "5-Year Return": <number>,
+        "Expense Ratio": <number>,
+        "Key Metrics": {{ /* all metrics returned by mutual_funds_tool */ }}
+      }}
+      /* repeat for each mutual fund */
+    ],
+    "ETFs Details": [
+      {{
+        "ETF Name": "<string>",
+        "3-Year Return": <number>,
+        "Expense Ratio": <number>,
+        "Standard Deviation": <number>,
+        "Key Metrics": {{ /* all metrics returned by etfs_tool */ }}
+      }}
+      /* repeat for each ETF */
+    ],
+    "Bonds Details": [
+      {{
+        "Bond Name": "<string>",
+        "YTM": <number>,
+        "Coupon Rate": <number>,
+        "Maturity Date": "<YYYY-MM-DD>",
+        "Additional Details": {{ /* all details returned by bonds_tool */ }}
+      }}
+      /* repeat for each bond */
+    ]
+  }}
+}}
 
 ### Portfolio Summary
 - **Total Monthly Investment:** ₹{monthly_investment}
@@ -140,15 +164,16 @@ def run_orc_agent(user_inputs):
 #     response = agent.invoke(stratergy_query)
 #     return response.content
 
-# if __name__ == "__main__":
-#     user_inputs = {
-#         "objective": "Emergency Fund",
-#         "investment_horizon": "5 years",
-#         "age": 22,
-#         "monthly_investment": 10000,
-#         "risk": "Conservative",
-#         "fund_type": "-",
-#         "special_prefs": "-"
-#     }
-#     print(run_stratergist_agent(user_inputs))
+if __name__ == "__main__":
+    user_inputs = {
+        "objective": "Emergency Fund",
+        "investment_horizon": "5 years",
+        "age": 22,
+        "monthly_investment": 0,
+        "risk": "Aggresive",
+        "mutual_fund": 8400,
+        "etf": 3000,
+        "bond": 600
+    }
+    print(run_orc_agent(user_inputs))
 
