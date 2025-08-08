@@ -44,7 +44,8 @@ query = {{
     "6_month_return": {{"$gte": ...}},
     "1_year_return": {{"$gte": ...}},
     "3_year_return": {{"$gte": ...}},
-    "5_year_return": {{"$gte": ...}}
+    "5_year_return": {{"$gte": ...}},
+    "minimum_investment": {{"$lte": {monthly_investment}}}
 }}
 """
 

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 
 from pydantic import BaseModel, Field
 
@@ -10,7 +10,7 @@ class Reflection(BaseModel):
 
 class AnswerQuestion(BaseModel):
     """Answer the question."""
-    answer: str = Field(description="Detialed point wise stratergies")
+    answer: Any = Field(description="Detialed point wise stratergies as JSON object")
     reflection: Reflection = Field(description="Your reflection on the initial answer.")
     search_queries: List[str] = Field(
         description="1-3 search queries for researching improvements to address the critique of your current answer."
