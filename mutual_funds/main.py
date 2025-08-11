@@ -171,7 +171,6 @@ Example:
 # print(result)
 
 
-@tool
 def mutual_funds_tool(user_inputs) -> str:
     """
     Uses the Mutual Funds agent to fetch personalized mutual fund recommendations
@@ -208,6 +207,14 @@ def mutual_funds_tool(user_inputs) -> str:
     response = agent.invoke({"input": query})
     return response.get("output", "No response from Mutual Funds agent.")
 
-# if __name__ == "__main__":
-#     user_inputs = {"objective": "Emergency Fund", "horizon": "5 years", "age": 22, "monthly_investment": 10000, "risk": "Conservative", "fund_type": "-", "special_prefs": "-"}
-#     print(mutual_funds_tool(user_inputs))
+if __name__ == "__main__":
+    user_inputs = {
+        "objective": "Emergency Fund",
+        "horizon": "2 years",
+        "age": 22,
+        "monthly_investment": 10000,
+        "risk": "Aggresive",
+        "fund_type": "-",
+        "special_prefs": "-"
+    }
+    print(mutual_funds_tool(user_inputs))

@@ -37,10 +37,9 @@ Instructions:
 
 - Use the above guidelines to construct a MongoDB query object for filtering ETFs.
 - Include only relevant filters based on the user's profile.
-- Ensure the query is clean and concise, like this sample:
+- Ensure the query is clean and concise, like this sample (Nothing extra like risk, liquidity, etc.):
 
 query = {{
-    "category": {{"$in": [...]}},
     "6_month_return": {{"$gte": ...}},
     "1_year_return": {{"$gte": ...}},
     "3_year_return": {{"$gte": ...}},
@@ -233,7 +232,6 @@ Example:
  - **Caveat**: Underperformed in 2022 due to tech overweight; rebalanced since.
 """
 
-@tool
 def etfs_tool(user_inputs) -> str:
     """
     Uses the ETFs agent to fetch personalized ETF recommendations
@@ -270,14 +268,14 @@ def etfs_tool(user_inputs) -> str:
     response = agent.invoke({"input": query})
     return response.get("output", "No response from ETFs agent.")
 
-# if __name__ == "__main__":
-#     user_inputs = {
-#         "objective": "Wealth Creation",
-#         "horizon": "10 years",
-#         "age": 30,
-#         "monthly_investment": 10000,
-#         "risk": "Moderate",
-#         "fund_type": "-",
-#         "special_prefs": "-"
-#     }
-#     print(etfs_tool(user_inputs))
+if __name__ == "__main__":
+    user_inputs = {
+        "objective": "Wealth Creation",
+        "horizon": "2 years",
+        "age": 30,
+        "monthly_investment": 10000,
+        "risk": "Moderate",
+        "fund_type": "-",
+        "special_prefs": "-"
+    }
+    print(etfs_tool(user_inputs))
