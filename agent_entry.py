@@ -44,6 +44,12 @@ Instructions:
 5. If any of {mutual_fund}, {etf}, {bond} is 0, then do not call the respective tool
 6. Do not summarize or filter any information from the tools output - include EACH and EVERy detailed information provided by the tools
 
+IMPORTANT: 
+- Do NOT skip any details provided by the tools
+- Include every single fund, ETF, and bond suggested
+- Preserve all metrics, ratios, and performance data
+- Maintain the exact formatting structure shown below
+
 Produce your recommendation strictly as valid JSON, matching this schema exactly:
 {{
   "Investment Portfolio Recommendation": {{
@@ -84,18 +90,6 @@ Produce your recommendation strictly as valid JSON, matching this schema exactly
     ]
   }}
 }}
-
-### Portfolio Summary
-- **Total Monthly Investment:** ₹{monthly_investment}
-- **Expected Portfolio Return:** [X-Y]% per annum
-- **Risk Level:** [Based on user's risk appetite]
-- **Investment Horizon:** {investment_horizon} years
-
-IMPORTANT: 
-- Do NOT skip any details provided by the tools
-- Include every single fund, ETF, and bond suggested
-- Preserve all metrics, ratios, and performance data
-- Maintain the exact formatting structure shown above
 """
 
 stratergy_query_template = """
@@ -171,9 +165,9 @@ if __name__ == "__main__":
         "age": 22,
         "monthly_investment": 0,
         "risk": "Aggresive",
-        "mutual_fund": 8400,
-        "etf": 3000,
-        "bond": 600
+        "mutual_fund": 200,
+        "etf": 0,
+        "bond": 0
     }
     print(run_orc_agent(user_inputs))
 

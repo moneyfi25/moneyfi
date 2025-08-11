@@ -58,11 +58,12 @@ def push_to_mongo(df: pd.DataFrame) -> list:
     if not records:
         print("No records to insert.")
         return []
+    sgb_collection.delete_many({})  # Clear existing records
     result = sgb_collection.insert_many(records)
     return result.inserted_ids
 
 def main():
-    filepath = "MW-SGB-31-Jul-2025.csv"
+    filepath = "MW-SGB-10-Aug-2025.csv"
     df = load_csv(filepath)
     print("Columns:", df.columns.tolist())
     filters = {

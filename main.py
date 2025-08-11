@@ -102,15 +102,34 @@ def start_task():
         print("❌ Error in /startTask:", str(e))
         return jsonify({"status": "error", "message": str(e)}), 500
     
-@app.route('/getReportByType/<type>', methods=['GET'])
-def get_report_by_type(type):
+@app.route('/getReportByType', methods=['POST'])
+def get_report_by_type():
     try:
+        data = request.get_json()
+        type = data.get("type")
+        computed_allocation = data.get("computedAllocation", {})
+        
         if type is None:
             return jsonify({"error": "Missing 'type' in request body"}), 400
+        
         type = int(type)
         report = report_collection.find_one({"type": type})
+        
         if not report:
             return jsonify({"error": "No report found for the given type."}), 404
+
+        # Update allocations if computedAllocation is provided
+        if computed_allocation:
+            # Extract only the allocation amounts (not percentages or totalMonthly)
+            new_allocations = {}
+            for key, value in computed_allocation.items():
+                if not key.endswith("%") and key != "totalMonthly":
+                    new_allocations[key] = value
+            
+            # Update the report's allocations
+            if new_allocations:
+                report["allocations"] = new_allocations
+                print(f"✅ Updated allocations for type {type}: {new_allocations}")
 
         report["_id"] = str(report["_id"])
         return jsonify({"report": report}), 200
@@ -241,45 +260,140 @@ def add_stratergies():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def _compute_amounts_from_percentages(money: int, alloc: dict):
+    """Compute MF/ETF/Bond rupee amounts from percentage fields in `alloc`."""
+    # Read percents (accept a few possible key styles)
+    p_mf   = alloc.get("Mutual Funds%", alloc.get("MutualFunds%", alloc.get("MF%", 0))) or 0
+    p_etf  = alloc.get("ETFs%",        alloc.get("ETF%",        0)) or 0
+    p_bond = alloc.get("Bonds%",       alloc.get("Bond%",       0)) or 0
+
+    total_pct = (p_mf or 0) + (p_etf or 0) + (p_bond or 0)
+
+    # If no % provided, try to infer from absolute fields; else fall back to MF=100%
+    if not total_pct:
+        abs_mf   = alloc.get("Mutual Funds", 0) or 0
+        abs_etf  = alloc.get("ETFs", 0) or 0
+        abs_bond = alloc.get("Bonds", 0) or 0
+        total_abs = abs_mf + abs_etf + abs_bond
+        if total_abs > 0:
+            p_mf   = round(100 * abs_mf   / total_abs, 2)
+            p_etf  = round(100 * abs_etf  / total_abs, 2)
+            p_bond = round(100 * abs_bond / total_abs, 2)
+            total_pct = p_mf + p_etf + p_bond
+        else:
+            p_mf, p_etf, p_bond, total_pct = 100, 0, 0, 100  # safe default
+
+    # Normalize if percentages don't sum to 100
+    if total_pct != 100 and total_pct > 0:
+        scale = 100.0 / total_pct
+        p_mf, p_etf, p_bond = p_mf * scale, p_etf * scale, p_bond * scale
+
+    # Compute integer rupee amounts with remainder correction to ensure exact sum
+    amt_mf   = int(round(money * (p_mf / 100.0)))
+    amt_etf  = int(round(money * (p_etf / 100.0)))
+    amt_bond = int(round(money * (p_bond / 100.0)))
+
+    # Fix rounding drift so amounts add up to `money`
+    diff = money - (amt_mf + amt_etf + amt_bond)
+    if diff != 0:
+        # Assign remainder to the bucket with the largest percentage
+        triples = [("Mutual Funds", p_mf), ("ETFs", p_etf), ("Bonds", p_bond)]
+        triples.sort(key=lambda x: x[1], reverse=True)
+        top = triples[0][0]
+        if top == "Mutual Funds":
+            amt_mf += diff
+        elif top == "ETFs":
+            amt_etf += diff
+        else:
+            amt_bond += diff
+
+    print(amt_mf)
+    return {
+        "amounts": {
+            "Mutual Funds": amt_mf,
+            "ETFs": amt_etf,
+            "Bonds": amt_bond
+        },
+        "percentages": {
+            "Mutual Funds%": round(p_mf, 2),
+            "ETFs%": round(p_etf, 2),
+            "Bonds%": round(p_bond, 2)
+        }
+    }
+
 @app.route('/getStratergy', methods=['POST'])
 def get_strategy():
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         print("🔍 Strategy request data:", data)
+
         time = data.get("yearsToAchieve")
         money = data.get("monthlyInvestment")
 
-        if money >= 100 and money < 500:
-            if time >= 1 and time < 3:
+        # Basic validation
+        if time is None or money is None:
+            return jsonify({"error": "yearsToAchieve and monthlyInvestment are required"}), 400
+        try:
+            time = float(time)
+            money = int(money)
+        except Exception:
+            return jsonify({"error": "Invalid types for yearsToAchieve or monthlyInvestment"}), 400
+
+        # Determine category (same logic as before)
+        category = None
+        if 100 <= money < 500:
+            if 1 <= time < 3:
                 category = 11
-            elif time >= 3 and time < 6:
+            elif 3 <= time < 6:
                 category = 12
             elif time >= 6:
                 category = 13
-        elif money >= 500 and money < 10000:
-            if time >= 1 and time < 3:
+        elif 500 <= money < 10000:
+            if 1 <= time < 3:
                 category = 21
-            elif time >= 3 and time < 6:
+            elif 3 <= time < 6:
                 category = 22
             elif time >= 6:
                 category = 23
         elif money >= 10000:
-            if time >= 1 and time < 3:
+            if 1 <= time < 3:
                 category = 31
-            elif time >= 3 and time < 6:
+            elif 3 <= time < 6:
                 category = 32
             elif time >= 6:
                 category = 33
 
-        # Fetch matching strategies
-        stratergies = list(stratergy_collection.find({"type": category}))
-        for s in stratergies:
-            s["_id"] = str(s["_id"])
+        if category is None:
+            return jsonify({"message": "No matching category for the given inputs."}), 400
 
-        if not stratergies:
+        # Fetch matching strategy docs
+        docs = list(stratergy_collection.find({"type": category}))
+        if not docs:
             return jsonify({"message": "No strategies found for the given criteria."}), 404
 
-        return jsonify({"strategy": stratergies}), 200
+        # Build response: for each strategy in each doc, compute rupee allocations from %
+        out_strategies = []
+        for doc in docs:
+            for s in (doc.get("strategies") or []):
+                alloc = s.get("allocation") or {}
+                computed = _compute_amounts_from_percentages(money, alloc)
+
+                out_strategies.append({
+                    "name": s.get("name"),
+                    "description": s.get("description"),
+                    "riskLevel": s.get("riskLevel"),
+                    "expectedReturn": s.get("expectedReturn"),
+                    "maturityAmount": s.get("maturityAmount"),
+                    "templateAllocation": alloc,                 # original template from DB
+                    "computedAllocation": {                      # final monthly split in ₹
+                        **computed["amounts"],
+                        **computed["percentages"],
+                        "totalMonthly": money
+                    },
+                    "type": doc.get("type")
+                })
+
+        return jsonify({"strategy": out_strategies}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -295,188 +409,3 @@ def get_response_store(task_id):
 
 if __name__ == "__main__":
     socketio.run(app, debug=True, port=5000)
-#     agent_text = """
-#     ```json
-# {
-#   "Investment Portfolio Recommendation": {
-#     "Monthly Investment Allocation": {
-#       "Mutual Funds": 8400,
-#       "ETFs": 3000,
-#       "Bonds": 600
-#     },
-#     "Mutual Funds Details": [
-#       {
-#         "Fund Name": "Axis Small Cap Fund - Direct Plan",
-#         "Category": "Equity - Small Cap",
-#         "5-Year Return": 31.29,
-#         "Expense Ratio": 0.56,
-#         "Key Metrics": {
-#           "Sharpe Ratio": "N/A",
-#           "Standard Deviation": 14.22,
-#           "Minimum Investment": 100,
-#           "Peer Comparison": "Top 10% over 3 and 5 years"
-#         }
-#       },
-#       {
-#         "Fund Name": "Bandhan Small Cap Fund - Direct Plan",
-#         "Category": "Equity - Small Cap",
-#         "5-Year Return": 37.11,
-#         "Expense Ratio": 0.39,
-#         "Key Metrics": {
-#           "Sharpe Ratio": "N/A",
-#           "Standard Deviation": 17.83,
-#           "Minimum Investment": 1000,
-#           "Peer Comparison": "Top 5% over 3 years"
-#         }
-#       },
-#       {
-#         "Fund Name": "HDFC Flexi Cap Fund - Direct Plan",
-#         "Category": "Equity - Flexi Cap",
-#         "5-Year Return": 29.18,
-#         "Expense Ratio": 0.72,
-#         "Key Metrics": {
-#           "Sharpe Ratio": "N/A",
-#           "Standard Deviation": 11.92,
-#           "Minimum Investment": 100,
-#           "Peer Comparison": "Top 15% over 5 years"
-#         }
-#       },
-#       {
-#         "Fund Name": "Edelweiss Mid Cap Fund - Direct Plan",
-#         "Category": "Equity - Mid Cap",
-#         "5-Year Return": 33.19,
-#         "Expense Ratio": 0.39,
-#         "Key Metrics": {
-#           "Sharpe Ratio": "N/A",
-#           "Standard Deviation": 16.19,
-#           "Minimum Investment": 100,
-#           "Peer Comparison": "Top 10% over 3 years"
-#         }
-#       },
-#       {
-#         "Fund Name": "Motilal Oswal Midcap Fund - Direct Plan",
-#         "Category": "Equity - Mid Cap",
-#         "5-Year Return": 36.21,
-#         "Expense Ratio": 0.68,
-#         "Key Metrics": {
-#           "Sharpe Ratio": "N/A",
-#           "Standard Deviation": 17.94,
-#           "Minimum Investment": 500,
-#           "Peer Comparison": "Top 5% over 5 years"
-#         }
-#       }
-#     ],
-#     "ETFs Details": [
-#       {
-#         "ETF Name": "Motilal Oswal NASDAQ 100 ETF",
-#         "3-Year Return": 26.61,
-#         "Expense Ratio": 0.58,
-#         "Standard Deviation": 17.44,
-#         "Key Metrics": {
-#           "1Y Return": 27.69,
-#           "Sharpe Ratio": "N/A",
-#           "Peer Comparison": "Top 15% for 1Y and 3Y"
-#         }
-#       },
-#       {
-#         "ETF Name": "Invesco India - Invesco EQQQ NASDAQ-100 ETF FoF - Direct Plan",
-#         "3-Year Return": 26.81,
-#         "Expense Ratio": 0.16,
-#         "Standard Deviation": "N/A",
-#         "Key Metrics": {
-#           "1Y Return": 26.28,
-#           "Sortino Ratio": 2.0,
-#           "Peer Comparison": "Top tier performance"
-#         }
-#       },
-#       {
-#         "ETF Name": "Aditya Birla Sun Life Nifty Healthcare ETF",
-#         "3-Year Return": 24.62,
-#         "Expense Ratio": 0.19,
-#         "Standard Deviation": "N/A",
-#         "Key Metrics": {
-#           "1Y Return": 11.83,
-#           "Sortino Ratio": 1.78,
-#           "Peer Comparison": "Ranks well in healthcare sector"
-#         }
-#       },
-#       {
-#         "ETF Name": "ICICI Prudential Nifty Healthcare ETF",
-#         "3-Year Return": 24.43,
-#         "Expense Ratio": 0.15,
-#         "Standard Deviation": "N/A",
-#         "Key Metrics": {
-#           "1Y Return": 11.93,
-#           "Sortino Ratio": 1.76,
-#           "Peer Comparison": "Competitive in healthcare sector"
-#         }
-#       },
-#       {
-#         "ETF Name": "Aditya Birla Sun Life Silver ETF",
-#         "3-Year Return": 27.05,
-#         "Expense Ratio": 0.35,
-#         "Standard Deviation": "N/A",
-#         "Key Metrics": {
-#           "1Y Return": 38.71,
-#           "Sortino Ratio": 1.74,
-#           "Peer Comparison": "Ranks highly among silver ETFs"
-#         }
-#       }
-#     ],
-#     "Bonds Details": [
-#       {
-#         "Bond Name": "82HUDCO27",
-#         "YTM": 3.58,
-#         "Coupon Rate": 8.2,
-#         "Maturity Date": "2027-03-05",
-#         "Additional Details": {
-#           "Type": "Corporate Bond",
-#           "Price vs Face Value": "₹72.00 (Premium)"
-#         }
-#       },
-#       {
-#         "Bond Name": "824GS2027",
-#         "YTM": 5.06,
-#         "Coupon Rate": 8.24,
-#         "Maturity Date": "2027-12-31",
-#         "Additional Details": {
-#           "Type": "Government Security (G-Sec)",
-#           "Price vs Face Value": "₹7.27 (Premium)"
-#         }
-#       },
-#       {
-#         "Bond Name": "738GS2027",
-#         "YTM": 5.71,
-#         "Coupon Rate": 7.38,
-#         "Maturity Date": "2027-12-31",
-#         "Additional Details": {
-#           "Type": "Government Security (G-Sec)",
-#           "Price vs Face Value": "₹3.79 (Premium)"
-#         }
-#       },
-#       {
-#         "Bond Name": "850NHAI29",
-#         "YTM": 4.75,
-#         "Coupon Rate": 8.5,
-#         "Maturity Date": "2029-02-05",
-#         "Additional Details": {
-#           "Type": "Corporate Bond",
-#           "Price vs Face Value": "₹122.01 (Premium)"
-#         }
-#       },
-#       {
-#         "Bond Name": "709GS2054",
-#         "YTM": 7.02,
-#         "Coupon Rate": 7.09,
-#         "Maturity Date": "2054-12-31",
-#         "Additional Details": {
-#           "Type": "Government Security (G-Sec)",
-#           "Price vs Face Value": "₹1.22 (Premium)"
-#         }
-#       }
-#     ]
-#   }
-# }
-# ```
-#     """
-#     extract_investment_data(agent_text, 323)

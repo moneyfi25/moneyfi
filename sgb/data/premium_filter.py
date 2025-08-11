@@ -44,4 +44,4 @@ def premium_evaluator(
         print("No valid SGB records to update.")
 
 if __name__ == "__main__":
-    premium_evaluator(market_gold_price=9853.0)
+    premium_evaluator(market_gold_price=10094.0)

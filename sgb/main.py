@@ -36,7 +36,6 @@ If no SGB is available within the user's budget, provide this output:
 Make sure your response is concise and actionable.
 """
 
-@tool
 def sgb_tool(user_inputs) -> str:
     """
     Uses the SGB agent to fetch the best Sovereign Gold Bond suggestion 
@@ -56,6 +55,6 @@ def sgb_tool(user_inputs) -> str:
     response = agent.invoke({"input": query})
     return response.get("output", "No response from SGB agent.")
 
-# if __name__ == "__main__":
-#     user_inputs = {"objective": "Emergency Fund", "horizon": "5 years", "age": 22, "monthly_investment": 10000, "risk": "Conservative", "fund_type": "-", "special_prefs": "-"}
-#     print(sgb_tool(user_inputs))
+if __name__ == "__main__":
+    user_inputs = {"objective": "Emergency Fund", "horizon": "2 years", "age": 22, "monthly_investment": 15000, "risk": "Aggresive", "fund_type": "-", "special_prefs": "-"}
+    print(sgb_tool(user_inputs))
