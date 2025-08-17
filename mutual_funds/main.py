@@ -11,7 +11,6 @@ pre_query_template = """
 You are an expert Mutual Fund Research Analyst. You know the parameters to filter mutual funds based on the user portfolio.
 You have to define the filter parameters for filtering mutual funds from my mongo db based on the user portfolio:
 
-[This template is for monthly SIP investments so dont consider lumpsum {lumpsum_investment}]
 User Inputs:
 
 - Investment Objective: {objective} 
@@ -23,10 +22,11 @@ User Inputs:
 - Special Preferences/Constraints: {special_prefs} 
 
 Mapping Guidelines:
-1. **Risk-Category Mapping:(Find from category list in instruction)**
-   - Conservative/Low: DT-* (debt), HY-* (hybrid), Gold/Silver funds
-   - Moderate: EQ-LC, EQ-L&MC, EQ-MLC and hybrid funds (HY-)
-   - Aggressive/High: EQ-FLX, EQ-MC, EQ-SC, EQ-THEMATIC, sector-specific EQ funds
+1. **Risk-Category Mapping (Find from category list in instruction):**
+   - Low: DT-* (debt), HY-* (hybrid), Gold/Silver funds
+   - Moderate-Low: HY-* (hybrid), EQ-LC, EQ-L&MC, EQ-MLC
+   - Moderate: EQ-LC, EQ-L&MC, EQ-MLC, HY-* (hybrid)
+   - High: EQ-FLX, EQ-MC, EQ-SC, EQ-THEMATIC, sector-specific EQ funds
 
 2. **Horizon-Based Filters:**
    - Short-term (<3 years): Focus on DT-LIQ, DT-SD, DT-MM
@@ -34,28 +34,33 @@ Mapping Guidelines:
    - Long-term (7+ years): EQ-* funds with higher growth potential
 
 3. **Performance Criteria (use only relevant fields):**
-   - Conservative: expense_ratio ≤ 1.0, standard_deviation ≤ 15, sharpe_ratio ≥ 0.8
+   - Low: expense_ratio ≤ 1.0, standard_deviation ≤ 12, sharpe_ratio ≥ 0.7
+   - Moderate-Low: expense_ratio ≤ 1.2, standard_deviation ≤ 15, sharpe_ratio ≥ 0.8
    - Moderate: expense_ratio ≤ 1.5, standard_deviation ≤ 20, sharpe_ratio ≥ 1.0
-   - Aggressive: expense_ratio ≤ 2.0, standard_deviation ≤ 25, sharpe_ratio ≥ 1.2
+   - High: expense_ratio ≤ 2.0, standard_deviation ≤ 25, sharpe_ratio ≥ 1.2
 
 4. **Risk Criteria:**
-   - Conservative: beta ≤ 0.5, alpha ≥ 0.5
+   - Low: beta ≤ 0.5, alpha ≥ 0.5
+   - Moderate-Low: beta ≤ 0.8, alpha ≥ 0.8
    - Moderate: beta ≤ 1.0, alpha ≥ 1.0
-   - Aggressive: beta ≤ 1.5, alpha ≥ 1.5
+   - High: beta ≤ 1.5, alpha ≥ 1.5
 
 5. **Return Guidelines (Expected Returns Based on Risk and Horizon):**
    - **Short-term (<3 years):**
-     - Conservative: 6-month return ≥ 3%, 1-year return ≥ 5%
+     - Low: 6-month return ≥ 3%, 1-year return ≥ 5%
+     - Moderate-Low: 6-month return ≥ 3.5%, 1-year return ≥ 5.5%
      - Moderate: 6-month return ≥ 4%, 1-year return ≥ 6%
-     - Aggressive: 6-month return ≥ 5%, 1-year return ≥ 7%
+     - High: 6-month return ≥ 5%, 1-year return ≥ 7%
    - **Medium-term (3-7 years):**
-     - Conservative: 3-year return ≥ 6%, 5-year return ≥ 7%
+     - Low: 3-year return ≥ 6%, 5-year return ≥ 7%
+     - Moderate-Low: 3-year return ≥ 7%, 5-year return ≥ 8%
      - Moderate: 3-year return ≥ 8%, 5-year return ≥ 9%
-     - Aggressive: 3-year return ≥ 10%, 5-year return ≥ 12%
+     - High: 3-year return ≥ 10%, 5-year return ≥ 12%
    - **Long-term (7+ years):**
-     - Conservative: 5-year return ≥ 8%, 10-year return ≥ 9%
+     - Low: 5-year return ≥ 8%, 10-year return ≥ 9%
+     - Moderate-Low: 5-year return ≥ 9%, 10-year return ≥ 10%
      - Moderate: 5-year return ≥ 10%, 10-year return ≥ 12%
-     - Aggressive: 5-year return ≥ 12%, 10-year return ≥ 15%
+     - High: 5-year return ≥ 12%, 10-year return ≥ 15%
 
 Instructions:
 
@@ -94,7 +99,6 @@ pre_query_lumpsum_template = """
 You are an expert Mutual Fund Research Analyst. You know the parameters to filter mutual funds based on the user portfolio.
 You have to define the filter parameters for filtering mutual funds from my mongo db based on the user portfolio:
 
-[This template is for lumpsum investments so dont consider monthly SIP {monthly_investment}]
 User Inputs:
 
 - Investment Objective: {objective} 
@@ -106,10 +110,11 @@ User Inputs:
 - Special Preferences/Constraints: {special_prefs} 
 
 Mapping Guidelines:
-1. **Risk-Category Mapping:(Find from category list in instruction)**
-   - Conservative/Low: DT-* (debt), HY-* (hybrid), Gold/Silver funds
-   - Moderate: EQ-LC, EQ-L&MC, EQ-MLC and hybrid funds (HY-)
-   - Aggressive/High: EQ-FLX, EQ-MC, EQ-SC, EQ-THEMATIC, sector-specific EQ funds
+1. **Risk-Category Mapping (Find from category list in instruction):**
+   - Low: DT-* (debt), HY-* (hybrid), Gold/Silver funds
+   - Moderate-Low: HY-* (hybrid), EQ-LC, EQ-L&MC, EQ-MLC
+   - Moderate: EQ-LC, EQ-L&MC, EQ-MLC, HY-* (hybrid)
+   - High: EQ-FLX, EQ-MC, EQ-SC, EQ-THEMATIC, sector-specific EQ funds
 
 2. **Horizon-Based Filters:**
    - Short-term (<3 years): Focus on DT-LIQ, DT-SD, DT-MM
@@ -117,28 +122,33 @@ Mapping Guidelines:
    - Long-term (7+ years): EQ-* funds with higher growth potential
 
 3. **Performance Criteria (use only relevant fields):**
-   - Conservative: expense_ratio ≤ 1.0, standard_deviation ≤ 15, sharpe_ratio ≥ 0.8
+   - Low: expense_ratio ≤ 1.0, standard_deviation ≤ 12, sharpe_ratio ≥ 0.7
+   - Moderate-Low: expense_ratio ≤ 1.2, standard_deviation ≤ 15, sharpe_ratio ≥ 0.8
    - Moderate: expense_ratio ≤ 1.5, standard_deviation ≤ 20, sharpe_ratio ≥ 1.0
-   - Aggressive: expense_ratio ≤ 2.0, standard_deviation ≤ 25, sharpe_ratio ≥ 1.2
+   - High: expense_ratio ≤ 2.0, standard_deviation ≤ 25, sharpe_ratio ≥ 1.2
 
 4. **Risk Criteria:**
-   - Conservative: beta ≤ 0.5, alpha ≥ 0.5
+   - Low: beta ≤ 0.5, alpha ≥ 0.5
+   - Moderate-Low: beta ≤ 0.8, alpha ≥ 0.8
    - Moderate: beta ≤ 1.0, alpha ≥ 1.0
-   - Aggressive: beta ≤ 1.5, alpha ≥ 1.5
+   - High: beta ≤ 1.5, alpha ≥ 1.5
 
 5. **Return Guidelines (Expected Returns Based on Risk and Horizon):**
    - **Short-term (<3 years):**
-     - Conservative: 6-month return ≥ 3%, 1-year return ≥ 5%
+     - Low: 6-month return ≥ 3%, 1-year return ≥ 5%
+     - Moderate-Low: 6-month return ≥ 3.5%, 1-year return ≥ 5.5%
      - Moderate: 6-month return ≥ 4%, 1-year return ≥ 6%
-     - Aggressive: 6-month return ≥ 5%, 1-year return ≥ 7%
+     - High: 6-month return ≥ 5%, 1-year return ≥ 7%
    - **Medium-term (3-7 years):**
-     - Conservative: 3-year return ≥ 6%, 5-year return ≥ 7%
+     - Low: 3-year return ≥ 6%, 5-year return ≥ 7%
+     - Moderate-Low: 3-year return ≥ 7%, 5-year return ≥ 8%
      - Moderate: 3-year return ≥ 8%, 5-year return ≥ 9%
-     - Aggressive: 3-year return ≥ 10%, 5-year return ≥ 12%
+     - High: 3-year return ≥ 10%, 5-year return ≥ 12%
    - **Long-term (7+ years):**
-     - Conservative: 5-year return ≥ 8%, 10-year return ≥ 9%
+     - Low: 5-year return ≥ 8%, 10-year return ≥ 9%
+     - Moderate-Low: 5-year return ≥ 9%, 10-year return ≥ 10%
      - Moderate: 5-year return ≥ 10%, 10-year return ≥ 12%
-     - Aggressive: 5-year return ≥ 12%, 10-year return ≥ 15%
+     - High: 5-year return ≥ 12%, 10-year return ≥ 15%
 
 Instructions:
 

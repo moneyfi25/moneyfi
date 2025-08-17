@@ -18,13 +18,16 @@ actor_prompt_template = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            """You are expert financial stratergist.
+            """You are an expert financial strategist.
 Current time: {time}
 
+Instructions:
 1. {first_instruction}
-2. Reflect and critique your answer. Be severe to maximize improvement.
-3. Recommend search queries to research information regarding stratergies used in market and improve your answer.
-4. Give the best possible options for the lumpsum and monthly investment amounts.""",
+2. After answering, reflect and critique your response. Be rigorous and suggest concrete improvements.
+3. Recommend specific search queries to research current market strategies and further improve your answer.
+4. Suggest the best possible allocation options for both lumpsum and monthly investment amounts, ensuring all recommendations are actionable and practical.
+5. Follow all minimum investment rules and output schema strictly.
+""",
         ),
         MessagesPlaceholder(variable_name="messages"),
         ("system", "Answer the user's question above using the required format."),
@@ -33,9 +36,12 @@ Current time: {time}
     time=lambda: datetime.datetime.now().isoformat(),
 )
 
-
 first_responder_prompt_template = actor_prompt_template.partial(
-    first_instruction="Provide a detiled stratergy based on lumpsum and monthly investment amounts. If the lumpsum is 0, then only consider monthly investment.",
+    first_instruction=(
+        "Provide a detailed investment strategy based on the user's lumpsum and monthly investment amounts. "
+        "If the lumpsum is 0, only consider monthly investment. "
+        "Ensure allocations are realistic, actionable, and comply with all minimum investment requirements."
+    ),
 )
 
 first_responder = first_responder_prompt_template | llm.bind_tools(
@@ -43,16 +49,16 @@ first_responder = first_responder_prompt_template | llm.bind_tools(
 )
 
 revise_instructions = """Revise your previous answer using the new information:
-    1. These are the minimum investment amounts for each instrument. Use this information to make sure your recommendations are
-    priced less than monthly_investment or lumpsum_investment:
-        - Mutual Funds: starts from Rs. 100
-        - ETFs: starts from Rs. 100
-        - Bonds: starts from Rs. 100+
-        - Sovereign Gold Bonds: starts from Rs. 10,500+ (Current 999 gold price)
-    2. You MUST clearly mention the percentage of money allocated to each instrument in lumpsum and monthly investment.
-    3. You MUST maintain the output format as specified in the schema.
-    4. Hedge the risks by diversifying the portfolio. Search for the best practices to do so. Specially for conservative stratergies, focus on fixed income.
-    """
+1. These are the minimum investment amounts for each instrument. Your recommendations for each instrument must be at least the minimum and not exceed the available monthly_investment or lumpsum_investment:
+    - Mutual Funds: minimum Rs. 100
+    - ETFs: minimum Rs. 100
+    - Bonds: minimum Rs. 100
+    - Sovereign Gold Bonds: minimum Rs. 10,500 (current 999 gold price)
+2. Clearly specify the percentage allocation for each instrument in both lumpsum and monthly investments. All percentages must be integers and each allocation must sum to 100%.
+3. Strictly follow the output format as specified in the schema.
+4. Diversify the portfolio to hedge risks. For conservative strategies, prioritize fixed income instruments (Bonds, SGBs) over growth instruments.
+5. Use realistic, actionable allocations and ensure all recommendations are practical for the user's investment amounts.
+"""
 
 revisor = actor_prompt_template.partial(
     first_instruction=revise_instructions
