@@ -6,7 +6,7 @@ import os
 
 # --- Adjust import path ---
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from db import mutual_funds_collection, index_collection
+from db import mf_bkp_collection, index_collection
 
 
 def get_filtered_returns_series(collection, key_field, key_value, return_field, date_limit):
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
         # --- Get fund and index series ---
         fund_series = get_filtered_returns_series(
-            mutual_funds_collection, key_field="schemeCode", key_value=100033,
+            mf_bkp_collection, key_field="schemeCode", key_value=100033,
             return_field="diff_%", date_limit=three_years_ago
         )
 

@@ -8,7 +8,7 @@ from langchain_core.output_parsers.openai_tools import (
 )
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
-from schemas import AnswerQuestion, ReviseAnswer
+from .schemas import AnswerQuestion, ReviseAnswer
 
 llm = ChatOpenAI(model="o4-mini")
 parser = JsonOutputToolsParser(return_id=True)
@@ -23,7 +23,8 @@ Current time: {time}
 
 1. {first_instruction}
 2. Reflect and critique your answer. Be severe to maximize improvement.
-3. Recommend search queries to research information and improve your answer.""",
+3. Recommend search queries to research information regarding stratergies used in market and improve your answer.
+4. Give the best possible options for the lumpsum and monthly investment amounts.""",
         ),
         MessagesPlaceholder(variable_name="messages"),
         ("system", "Answer the user's question above using the required format."),
@@ -34,7 +35,7 @@ Current time: {time}
 
 
 first_responder_prompt_template = actor_prompt_template.partial(
-    first_instruction="Provide a detailed breakdown of the stratergies providing reasons for each. No need to mention name of fund or bond, just the stratergies and how to divide the money between them."
+    first_instruction="Provide a detiled stratergy based on lumpsum and monthly investment amounts. If the lumpsum is 0, then only consider monthly investment.",
 )
 
 first_responder = first_responder_prompt_template | llm.bind_tools(
@@ -42,16 +43,15 @@ first_responder = first_responder_prompt_template | llm.bind_tools(
 )
 
 revise_instructions = """Revise your previous answer using the new information:
-    1. You MUST check if the amount of money you are allocating to each instrument is a feasable amount or not.
-      - What I mean to say is if user has just 500 to invest monthly, then you cannot allocate 50 on bonds.
-      Beacsue bonds don't trade at such low prices. Bonds are ateast 100+. Search and verify what the prices of instruments can be in the market.
-      - Verify if the amount you are allocating is actually feasible to be invested in that instrument or not.
-      - If you need search using the tools provided to you, but DONT give vauge answers.
-      - Allcoate 0 if the instrument is not feasible to invest in.
-    2. You MUST clearly mention the amount allocated to each instrument.
-    3. Make sure to maintain the output format.
+    1. These are the minimum investment amounts for each instrument. Use this information to make sure your recommendations are
+    priced less than monthly_investment or lumpsum_investment:
+        - Mutual Funds: starts from Rs. 100
+        - ETFs: starts from Rs. 100
+        - Bonds: starts from Rs. 100+
+        - Sovereign Gold Bonds: starts from Rs. 10,500+ (Current 999 gold price)
+    2. You MUST clearly mention the percentage of money allocated to each instrument in lumpsum and monthly investment.
+    3. You MUST maintain the output format as specified in the schema.
     4. Hedge the risks by diversifying the portfolio. Search for the best practices to do so. Specially for conservative stratergies, focus on fixed income.
-    5. G-secs bonds are available at very low rates at 100+ rates so consider it while allocating.
     """
 
 revisor = actor_prompt_template.partial(
