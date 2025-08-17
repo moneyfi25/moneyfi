@@ -1,4 +1,4 @@
-from .toolkit import fetch_ytm, fetch_coupon, fetch_diff_ltp_face, fetch_maturity
+from .toolkit import fetch_ytm, fetch_coupon, fetch_diff_ltp_face, fetch_maturity, fetch_ltp
 from langchain.agents import initialize_agent, Tool, AgentType
 from dotenv import load_dotenv
 import os
@@ -56,6 +56,20 @@ tools = [
          ...
         ].
         """ 
+    ),
+    Tool(
+        name="fetch_ltp",
+        func=fetch_ltp,
+        description="""
+        Fetch all bonds and their last traded prices.
+        Use it to make sure LTP is less than monthly_investment or lumpsum_investment.
+        Returns a JSON array of objects:
+        [{
+        "SYMBOL": ..., 
+        "LTP": ...},
+         ...
+        ].
+        """
     )
 ]
 

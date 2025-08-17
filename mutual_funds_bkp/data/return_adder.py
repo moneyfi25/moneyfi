@@ -9,7 +9,7 @@ import pandas as pd
 
 # adjust import path as needed
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from db import mutual_funds_collection
+from db import mf_bkp_collection
 
 def compute_annualised_returns(daily_returns_map):
     """
@@ -117,7 +117,7 @@ def compute_trailing_returns(daily_returns_map):
 
 def main():
     # Fetch only the fields we need, limit to first 10 docs
-    cursor = mutual_funds_collection.find(
+    cursor = mf_bkp_collection.find(
         {},
         {"schemeCode": 1, "schemeName": 1, "daily_returns": 1}
     ).limit(10)
@@ -133,7 +133,7 @@ def main():
         ann = compute_annualised_returns(dr_map)
 
         # Update back into MongoDB
-        mutual_funds_collection.update_one(
+        mf_bkp_collection.update_one(
             {"_id": _id},
             {
                 "$set": {

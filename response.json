@@ -1,49 +1,74 @@
 {
   "strategies": [
     {
-      "name": "Balanced Growth",
-      "description": "A balanced approach for moderate risk and steady growth.",
+      "name": "Conservative Income",
+      "description": "Emphasis on capital preservation and steady income with predominant allocation to fixed income.",
       "allocation": {
-        "Mutual Funds": 6000,
-        "Mutual Funds%": 50,
-        "ETFs": 3600,
-        "ETFs%": 30,
-        "Bonds": 2400,
-        "Bonds%": 20
+        "monthly": { "MutualFunds%": 10, "ETFs%": 0, "Bonds%": 90, "SGBs%": 0 },
+        "lumpsum": { "MutualFunds%": 0, "ETFs%": 0, "Bonds%": 100, "SGBs%": 0 }
       },
-      "expectedReturn": "10-12%",
-      "mautityAmount": 2630000,
+      "expectedReturn": "~7% p.a.",
+      "maturityAmount": {
+        "lumpsumFV": 14025,
+        "monthlyFV": 360291,
+        "totalFV": 374316
+      },
+      "riskLevel": "Low"
+    },
+    {
+      "name": "Hybrid Income & Stability",
+      "description": "Blend of moderate equity exposure and bonds for balanced growth and income.",
+      "allocation": {
+        "monthly": {
+          "MutualFunds%": 30,
+          "ETFs%": 20,
+          "Bonds%": 50,
+          "SGBs%": 0
+        },
+        "lumpsum": { "MutualFunds%": 30, "ETFs%": 20, "Bonds%": 50, "SGBs%": 0 }
+      },
+      "expectedReturn": "~8% p.a.",
+      "maturityAmount": {
+        "lumpsumFV": 14693,
+        "monthlyFV": 369752,
+        "totalFV": 384445
+      },
+      "riskLevel": "Moderate-Low"
+    },
+    {
+      "name": "Balanced Moderate Growth",
+      "description": "Diversified mix of equities and fixed income to capture upside while cushioning volatility.",
+      "allocation": {
+        "monthly": {
+          "MutualFunds%": 40,
+          "ETFs%": 20,
+          "Bonds%": 40,
+          "SGBs%": 0
+        },
+        "lumpsum": { "MutualFunds%": 50, "ETFs%": 20, "Bonds%": 30, "SGBs%": 0 }
+      },
+      "expectedReturn": "~9% p.a.",
+      "maturityAmount": {
+        "lumpsumFV": 15386,
+        "monthlyFV": 379350,
+        "totalFV": 394736
+      },
       "riskLevel": "Moderate"
     },
     {
-      "name": "Aggressive Equity",
-      "description": "Higher equity allocation for aggressive growth seekers.",
+      "name": "Aggressive Growth",
+      "description": "High-equity allocation aimed at maximizing returns over a 5-year horizon, suitable for higher risk tolerance.",
       "allocation": {
-        "Mutual Funds": 8400,
-        "Mutual Funds%": 70,
-        "ETFs": 3000,
-        "ETFs%": 25,
-        "Bonds": 600,
-        "Bonds%": 5
+        "monthly": { "MutualFunds%": 60, "ETFs%": 40, "Bonds%": 0, "SGBs%": 0 },
+        "lumpsum": { "MutualFunds%": 70, "ETFs%": 30, "Bonds%": 0, "SGBs%": 0 }
       },
-      "expectedReturn": "13-16%",
-      "mautityAmount": 3240000,
+      "expectedReturn": "~12% p.a.",
+      "maturityAmount": {
+        "lumpsumFV": 17623,
+        "monthlyFV": 412434,
+        "totalFV": 430057
+      },
       "riskLevel": "High"
-    },
-    {
-      "name": "Conservative Income",
-      "description": "Focuses on capital preservation and steady income with minimal risk.",
-      "allocation": {
-        "Mutual Funds": 2400,
-        "Mutual Funds%": 20,
-        "ETFs": 1200,
-        "ETFs%": 10,
-        "Bonds": 8400,
-        "Bonds%": 70
-      },
-      "expectedReturn": "6-8%",
-      "mautityAmount": 2090000,
-      "riskLevel": "Low"
     }
   ]
 }

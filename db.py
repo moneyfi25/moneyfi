@@ -7,6 +7,7 @@ uri = os.getenv("MONGO_URI")
 client = MongoClient(uri)
 db = client["MoneyFi"]
 mutual_funds_collection = db["mutual_funds"]
+mf_bkp_collection = db["mutual_funds_bkp"]
 sgb_collection = db["gold_bonds"]
 bonds_collection = db["bonds"]
 index_collection = db["index_data"]

@@ -3,7 +3,7 @@ from pymongo import MongoClient
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from db import mutual_funds_collection
+from db import mf_bkp_collection
 
 API_URL = "https://api.mfapi.in/mf"
 
@@ -25,7 +25,7 @@ def filter_valid_schemes(schemes):
 def store_in_mongo(data):
     try:
         if data:
-            mutual_funds_collection.insert_many(data)
+            mf_bkp_collection.insert_many(data)
             print(f"✅ Inserted {len(data)} valid schemes into MongoDB.")
         else:
             print("⚠️ No valid data to insert.")

@@ -11,15 +11,15 @@ load_dotenv()
 
 # Define tools
 tools = [
-    # Tool(
-    #     name="sgb_tool",
-    #     func=sgb_tool,
-    #     description=(
-    #         "Use this tool to find the best Sovereign Gold Bond (SGB) for hedging a growth portfolio, "
-    #         "fighting inflation, and achieving good returns. "
-    #         "It will return the top SGB based on the provided criteria."
-    #     ),
-    # ),
+    Tool(
+        name="sgb_tool",
+        func=sgb_tool,
+        description=(
+            "Use this tool to find the best Sovereign Gold Bond (SGB) for hedging a growth portfolio, "
+            "fighting inflation, and achieving good returns. "
+            "It will return the top SGB based on the provided criteria."
+        ),
+    ),
     Tool(
         name="mutual_funds_tool",
         func=mutual_funds_tool,

@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 
 # adjust import path as needed
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from db import mutual_funds_collection
+from db import mf_bkp_collection
 
 API_URL_TEMPLATE = "https://api.mfapi.in/mf/{}"
 
@@ -65,7 +65,7 @@ import pandas as pd
 
 
 def main():
-    all_schemes = list(mutual_funds_collection.find().limit(10))
+    all_schemes = list(mf_bkp_collection.find().limit(10))
 
     for fund in all_schemes:
         scheme_code = fund.get("schemeCode")
@@ -81,7 +81,7 @@ def main():
         daily_returns = calculate_daily_returns(api_data["data"])
 
         # update the document with the nested daily_returns map
-        mutual_funds_collection.update_one(
+        mf_bkp_collection.update_one(
             {"schemeCode": scheme_code},
             {"$set": {
                 "fund_house":      api_data.get("meta", {}).get("fund_house"),

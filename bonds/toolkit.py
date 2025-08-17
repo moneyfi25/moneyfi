@@ -90,4 +90,24 @@ def fetch_maturity() -> str:
     ]
     return json.dumps(results)
 
+@tool("fetch_ltp", return_direct=True)
+def fetch_ltp() -> str:
+    """Fetch all bonds and their last traded prices.
+    Returns a JSON array of objects:
+    [{
+    "SYMBOL": ..., 
+    "LTP": ...},
+     ...
+    ]."""
+    cursor = bonds_collection.find(
+        {"LTP": {"$exists": True}},
+        {"SYMBOL": 1, "LTP": 1}
+    )
+
+    results = [
+        {"SYMBOL": doc["SYMBOL"],
+         "LTP": doc["LTP"]}
+        for doc in cursor
+    ]
+    return json.dumps(results)
 

@@ -1,0 +1,133 @@
+{
+  "Investment Portfolio Recommendation": {
+    "Monthly Investment": {
+      "Allocation": {
+        "Mutual Funds": 2000,
+        "ETFs": 0,
+        "Bonds": 8000,
+        "SGBs": 0
+      },
+      "Mutual Funds Details": [
+        {
+          "Fund Name": "Axis Small Cap Fund - Direct Plan",
+          "Category": "Small-Cap Equity",
+          "5-Year Return": 31.29,
+          "Expense Ratio": 0.56,
+          "Key Metrics": {
+            "5Y CAGR": 31.29,
+            "Expense": 0.56,
+            "Standard Deviation": 14.22
+          }
+        },
+        {
+          "Fund Name": "HDFC Flexi Cap Fund - Direct Plan",
+          "Category": "Flexi-Cap Equity",
+          "5-Year Return": 29.18,
+          "Expense Ratio": 0.72,
+          "Key Metrics": {
+            "5Y CAGR": 29.18,
+            "Expense": 0.72,
+            "Standard Deviation": 11.92
+          }
+        },
+        {
+          "Fund Name": "Bandhan Small Cap Fund - Direct Plan",
+          "Category": "Small-Cap Equity",
+          "5-Year Return": 37.11,
+          "Expense Ratio": 0.39,
+          "Key Metrics": {
+            "5Y CAGR": 37.11,
+            "Expense": 0.39,
+            "Standard Deviation": 17.83
+          }
+        },
+        {
+          "Fund Name": "Edelweiss Mid Cap Fund - Direct Plan",
+          "Category": "Mid-Cap Equity",
+          "5-Year Return": 33.19,
+          "Expense Ratio": 0.39,
+          "Key Metrics": {
+            "5Y CAGR": 33.19,
+            "Expense": 0.39,
+            "Standard Deviation": 16.19
+          }
+        },
+        {
+          "Fund Name": "HDFC Small Cap Fund - Direct Plan",
+          "Category": "Small-Cap Equity",
+          "5-Year Return": 34.84,
+          "Expense Ratio": 0.71,
+          "Key Metrics": {
+            "5Y CAGR": 34.84,
+            "Expense": 0.71,
+            "Standard Deviation": 16.01
+          }
+        }
+      ],
+      "ETFs Details": [],
+      "Bonds Details": [
+        {
+          "Bond Name": "96IIFL28A",
+          "YTM": 10.19,
+          "Coupon Rate": 9.6,
+          "Maturity Date": "2028-06-24",
+          "Last Traded Price": 985.0,
+          "Key Metrics": {}
+        },
+        {
+          "Bond Name": "843IHFL29",
+          "YTM": 10.06,
+          "Coupon Rate": 8.43,
+          "Maturity Date": "2029-01-03",
+          "Last Traded Price": 952.2,
+          "Key Metrics": {}
+        },
+        {
+          "Bond Name": "94SFL28",
+          "YTM": 8.04,
+          "Coupon Rate": 9.4,
+          "Maturity Date": "2028-07-12",
+          "Last Traded Price": 1036.0,
+          "Key Metrics": {}
+        },
+        {
+          "Bond Name": "710GS2029",
+          "YTM": 5.63,
+          "Coupon Rate": 7.1,
+          "Maturity Date": "2029-12-31",
+          "Last Traded Price": 105.8,
+          "Key Metrics": {}
+        },
+        {
+          "Bond Name": "738GS2027",
+          "YTM": 5.71,
+          "Coupon Rate": 7.38,
+          "Maturity Date": "2027-12-31",
+          "Last Traded Price": 103.79,
+          "Key Metrics": {}
+        }
+      ],
+      "SGBs Details": []
+    },
+    "Lumpsum Investment": {
+      "Allocation": {
+        "Mutual Funds": 0,
+        "ETFs": 0,
+        "Bonds": 0,
+        "SGBs": 12000
+      },
+      "Mutual Funds Details": [],
+      "ETFs Details": [],
+      "Bonds Details": [],
+      "SGBs Details": [
+        {
+          "Bond Name": "SGBNV29VII",
+          "Last Traded Price (LTP)": 10235,
+          "Interest Rate": 2.5,
+          "Maturity Date": "2029",
+          "Expected Returns": 38.29
+        }
+      ]
+    }
+  }
+}

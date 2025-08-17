@@ -105,45 +105,111 @@ def start_task():
 @app.route('/getReportByType', methods=['POST'])
 def get_report_by_type():
     try:
-        data = request.get_json()
-        type = data.get("type")
-        computed_allocation = data.get("computedAllocation", {})
-        
-        if type is None:
+        data = request.get_json(force=True) or {}
+        strategy_type = data.get("type")
+        computed_allocation = data.get("computedAllocation", {}) or {}
+
+        if strategy_type is None:
             return jsonify({"error": "Missing 'type' in request body"}), 400
-        
-        type = int(type)
-        report = report_collection.find_one({"type": type})
-        
+
+        strategy_type = int(strategy_type)
+        report = report_collection.find_one({"type": strategy_type})
         if not report:
             return jsonify({"error": "No report found for the given type."}), 404
 
-        # Update allocations if computedAllocation is provided
-        if computed_allocation:
-            # Extract only the allocation amounts (not percentages or totalMonthly)
-            new_allocations = {}
-            for key, value in computed_allocation.items():
-                if not key.endswith("%") and key != "totalMonthly":
-                    new_allocations[key] = value
-            
-            # Update the report's allocations
-            if new_allocations:
-                report["allocations"] = new_allocations
-                print(f"✅ Updated allocations for type {type}: {new_allocations}")
+        # --- helpers ---------------------------------------------------------
+        def _num(v):
+            try:
+                n = float(v)
+                return int(n) if n.is_integer() else n
+            except Exception:
+                return 0
+
+        def _normalize_key(k: str) -> str:
+            k = (k or "").replace("_", " ").replace("-", " ").strip()
+            norm = k.lower().replace(" ", "")
+            mapping = {
+                "mutualfund": "Mutual Funds",
+                "mutualfunds": "Mutual Funds",
+                "mf": "Mutual Funds",
+                "etf": "ETFs",
+                "etfs": "ETFs",
+                "bond": "Bonds",
+                "bonds": "Bonds",
+                "sgb": "SGBs",
+                "sgbs": "SGBs",
+                "sovereigngoldbonds": "SGBs",
+            }
+            return mapping.get(norm, k if k else "Unknown")
+
+        def _clean_amounts(d: dict | None) -> dict:
+            if not isinstance(d, dict):
+                return {}
+            out = {}
+            for key, val in d.items():
+                if not isinstance(key, str):
+                    continue
+                # skip percentages and totals
+                kl = key.lower()
+                if key.endswith("%") or kl in ("totalmonthly", "totallumpsum"):
+                    continue
+                if isinstance(val, dict) or isinstance(val, list):
+                    continue
+                out[_normalize_key(key)] = _num(val)
+            return out
+        # ---------------------------------------------------------------------
+
+        # Accept either new or legacy shapes from the client
+        lump_in = (
+            computed_allocation.get("lumpsumAmounts")
+            or computed_allocation.get("lumpsum")
+            or computed_allocation.get("lumpsum_allocations")
+            or {}
+        )
+        mon_in = (
+            computed_allocation.get("monthlyAmounts")
+            or computed_allocation.get("monthly")
+            or computed_allocation.get("monthly_allocations")
+            or {}
+        )
+
+        lump_clean = _clean_amounts(lump_in)
+        mon_clean = _clean_amounts(mon_in)
+
+        # Only update what we actually received
+        if lump_clean:
+            report["lumpsum_allocations"] = lump_clean
+            print(f"✅ Updated lumpsum_allocations for type {strategy_type}: {lump_clean}")
+
+        if mon_clean:
+            report["monthly_allocations"] = mon_clean
+            print(f"✅ Updated monthly_allocations for type {strategy_type}: {mon_clean}")
+
+        # (optional) derive totals if you want them in the payload
+        report["total_lumpsum"] = sum(report.get("lumpsum_allocations", {}).values())
+        report["total_monthly"] = sum(report.get("monthly_allocations", {}).values())
 
         report["_id"] = str(report["_id"])
         return jsonify({"report": report}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
     
-def extract_investment_data(agent_text: str, type: int) -> dict:
+def extract_investment_data(agent_text: str, name: str, type: int) -> dict:
     result = {
         "type": type,
-        "allocations": {},
-        "mutual_funds": [],
-        "etfs": [],
-        "bonds": []
+        "name": name,
+        "monthly_allocations": {},
+        "lumpsum_allocations": {},
+        "monthly_mutual_funds": [],
+        "lumpsum_mutual_funds": [],
+        "monthly_etfs": [],
+        "lumpsum_etfs": [],
+        "monthly_bonds": [],
+        "lumpsum_bonds": [],
+        "monthly_sgbs": [],
+        "lumpsum_sgbs": []
     }
 
     # 1) Clean markdown-style code block wrapper (```json ... ```)
@@ -167,11 +233,13 @@ def extract_investment_data(agent_text: str, type: int) -> dict:
 
     # 3) Extract data
     rec = payload.get("Investment Portfolio Recommendation", {})
-    result["allocations"] = rec.get("Monthly Investment Allocation", {})
 
-    # Mutual Funds
-    for mf in rec.get("Mutual Funds Details", []):
-        result["mutual_funds"].append({
+    # Monthly Investment
+    monthly = rec.get("Monthly Investment", {})
+    result["monthly_allocations"] = monthly.get("Allocation", {})
+
+    for mf in monthly.get("Mutual Funds Details", []):
+        result["monthly_mutual_funds"].append({
             "name": mf.get("Fund Name"),
             "category": mf.get("Category"),
             "return_5y": mf.get("5-Year Return"),
@@ -179,9 +247,8 @@ def extract_investment_data(agent_text: str, type: int) -> dict:
             "key_metrics": mf.get("Key Metrics")
         })
 
-    # ETFs
-    for etf in rec.get("ETFs Details", []):
-        result["etfs"].append({
+    for etf in monthly.get("ETFs Details", []):
+        result["monthly_etfs"].append({
             "name": etf.get("ETF Name"),
             "return_3y": etf.get("3-Year Return"),
             "expense_ratio": etf.get("Expense Ratio"),
@@ -189,14 +256,64 @@ def extract_investment_data(agent_text: str, type: int) -> dict:
             "key_metrics": etf.get("Key Metrics")
         })
 
-    # Bonds
-    for bond in rec.get("Bonds Details", []):
-        result["bonds"].append({
+    for bond in monthly.get("Bonds Details", []):
+        result["monthly_bonds"].append({
             "name": bond.get("Bond Name"),
             "ytm": bond.get("YTM"),
             "coupon_rate": bond.get("Coupon Rate"),
             "maturity_date": bond.get("Maturity Date"),
-            "additional_details": bond.get("Additional Details")
+            "last_traded_price": bond.get("Last Traded Price"),
+            "key_metrics": bond.get("Key Metrics")
+        })
+
+    for sgb in monthly.get("SGBs Details", []):
+        result["monthly_sgbs"].append({
+            "name": sgb.get("Bond Name"),
+            "last_traded_price": sgb.get("Last Traded Price (LTP)"),
+            "interest_rate": sgb.get("Interest Rate"),
+            "maturity_date": sgb.get("Maturity Date"),
+            "expected_returns": sgb.get("Expected Returns")
+        })
+
+    # Lumpsum Investment
+    lumpsum = rec.get("Lumpsum Investment", {})
+    result["lumpsum_allocations"] = lumpsum.get("Allocation", {})
+
+    for mf in lumpsum.get("Mutual Funds Details", []):
+        result["lumpsum_mutual_funds"].append({
+            "name": mf.get("Fund Name"),
+            "category": mf.get("Category"),
+            "return_5y": mf.get("5-Year Return"),
+            "expense_ratio": mf.get("Expense Ratio"),
+            "key_metrics": mf.get("Key Metrics")
+        })
+
+    for etf in lumpsum.get("ETFs Details", []):
+        result["lumpsum_etfs"].append({
+            "name": etf.get("ETF Name"),
+            "return_3y": etf.get("3-Year Return"),
+            "expense_ratio": etf.get("Expense Ratio"),
+            "standard_deviation": etf.get("Standard Deviation"),
+            "key_metrics": etf.get("Key Metrics")
+        })
+
+    for bond in lumpsum.get("Bonds Details", []):
+        result["lumpsum_bonds"].append({
+            "name": bond.get("Bond Name"),
+            "ytm": bond.get("YTM"),
+            "coupon_rate": bond.get("Coupon Rate"),
+            "maturity_date": bond.get("Maturity Date"),
+            "last_traded_price": bond.get("Last Traded Price"),
+            "key_metrics": bond.get("Key Metrics")
+        })
+
+    for sgb in lumpsum.get("SGBs Details", []):
+        result["lumpsum_sgbs"].append({
+            "name": sgb.get("Bond Name"),
+            "last_traded_price": sgb.get("Last Traded Price (LTP)"),
+            "interest_rate": sgb.get("Interest Rate"),
+            "maturity_date": sgb.get("Maturity Date"),
+            "expected_returns": sgb.get("Expected Returns")
         })
 
     # 4) Save to MongoDB (if MongoDB collection is defined)
@@ -251,7 +368,6 @@ def add_stratergies():
         if not data or "strategies" not in data:
             return jsonify({"error": "Missing 'strategies' in request body"}), 400
 
-        # Insert the whole strategies object as one document
         result = stratergy_collection.insert_one(data)
         return jsonify({
             "message": "Strategies added successfully",
@@ -260,65 +376,51 @@ def add_stratergies():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def _compute_amounts_from_percentages(money: int, alloc: dict):
+def _compute_amounts_from_percentages(money: int, lumpsum: int, alloc: dict):
     """Compute MF/ETF/Bond rupee amounts from percentage fields in `alloc`."""
-    # Read percents (accept a few possible key styles)
-    p_mf   = alloc.get("Mutual Funds%", alloc.get("MutualFunds%", alloc.get("MF%", 0))) or 0
-    p_etf  = alloc.get("ETFs%",        alloc.get("ETF%",        0)) or 0
-    p_bond = alloc.get("Bonds%",       alloc.get("Bond%",       0)) or 0
+    # Read percentages for monthly and lumpsum allocations
+    monthly_alloc = alloc.get("monthly", {})
+    lumpsum_alloc = alloc.get("lumpsum", {})
 
-    total_pct = (p_mf or 0) + (p_etf or 0) + (p_bond or 0)
+    # Extract percentages for monthly allocation
+    p_mf_monthly = monthly_alloc.get("MutualFunds%", 0)
+    p_etf_monthly = monthly_alloc.get("ETFs%", 0)
+    p_bond_monthly = monthly_alloc.get("Bonds%", 0)
+    p_sgb_monthly = monthly_alloc.get("SGBs%", 0)
 
-    # If no % provided, try to infer from absolute fields; else fall back to MF=100%
-    if not total_pct:
-        abs_mf   = alloc.get("Mutual Funds", 0) or 0
-        abs_etf  = alloc.get("ETFs", 0) or 0
-        abs_bond = alloc.get("Bonds", 0) or 0
-        total_abs = abs_mf + abs_etf + abs_bond
-        if total_abs > 0:
-            p_mf   = round(100 * abs_mf   / total_abs, 2)
-            p_etf  = round(100 * abs_etf  / total_abs, 2)
-            p_bond = round(100 * abs_bond / total_abs, 2)
-            total_pct = p_mf + p_etf + p_bond
-        else:
-            p_mf, p_etf, p_bond, total_pct = 100, 0, 0, 100  # safe default
+    # Extract percentages for lumpsum allocation
+    p_mf_lumpsum = lumpsum_alloc.get("MutualFunds%", 0)
+    p_etf_lumpsum = lumpsum_alloc.get("ETFs%", 0)
+    p_bond_lumpsum = lumpsum_alloc.get("Bonds%", 0)
+    p_sgb_lumpsum = lumpsum_alloc.get("SGBs%", 0)
 
-    # Normalize if percentages don't sum to 100
-    if total_pct != 100 and total_pct > 0:
-        scale = 100.0 / total_pct
-        p_mf, p_etf, p_bond = p_mf * scale, p_etf * scale, p_bond * scale
+    # Compute amounts for monthly allocation
+    amt_mf_monthly = int(round(money * (p_mf_monthly / 100.0)))
+    amt_etf_monthly = int(round(money * (p_etf_monthly / 100.0)))
+    amt_bond_monthly = int(round(money * (p_bond_monthly / 100.0)))
+    amt_sgb_monthly = int(round(money * (p_sgb_monthly / 100.0)))
 
-    # Compute integer rupee amounts with remainder correction to ensure exact sum
-    amt_mf   = int(round(money * (p_mf / 100.0)))
-    amt_etf  = int(round(money * (p_etf / 100.0)))
-    amt_bond = int(round(money * (p_bond / 100.0)))
+    # Compute amounts for lumpsum allocation
+    amt_mf_lumpsum = int(round(lumpsum * (p_mf_lumpsum / 100.0)))
+    amt_etf_lumpsum = int(round(lumpsum * (p_etf_lumpsum / 100.0)))
+    amt_bond_lumpsum = int(round(lumpsum * (p_bond_lumpsum / 100.0)))
+    amt_sgb_lumpsum = int(round(lumpsum * (p_sgb_lumpsum / 100.0)))
 
-    # Fix rounding drift so amounts add up to `money`
-    diff = money - (amt_mf + amt_etf + amt_bond)
-    if diff != 0:
-        # Assign remainder to the bucket with the largest percentage
-        triples = [("Mutual Funds", p_mf), ("ETFs", p_etf), ("Bonds", p_bond)]
-        triples.sort(key=lambda x: x[1], reverse=True)
-        top = triples[0][0]
-        if top == "Mutual Funds":
-            amt_mf += diff
-        elif top == "ETFs":
-            amt_etf += diff
-        else:
-            amt_bond += diff
-
-    print(amt_mf)
     return {
-        "amounts": {
-            "Mutual Funds": amt_mf,
-            "ETFs": amt_etf,
-            "Bonds": amt_bond
+        "monthlyAmounts": {
+            "Mutual Funds": amt_mf_monthly,
+            "ETFs": amt_etf_monthly,
+            "Bonds": amt_bond_monthly,
+            "SGBs": amt_sgb_monthly
         },
-        "percentages": {
-            "Mutual Funds%": round(p_mf, 2),
-            "ETFs%": round(p_etf, 2),
-            "Bonds%": round(p_bond, 2)
-        }
+        "lumpsumAmounts": {
+            "Mutual Funds": amt_mf_lumpsum,
+            "ETFs": amt_etf_lumpsum,
+            "Bonds": amt_bond_lumpsum,
+            "SGBs": amt_sgb_lumpsum
+        },
+        "monthlyPercentages": monthly_alloc,
+        "lumpsumPercentages": lumpsum_alloc
     }
 
 @app.route('/getStratergy', methods=['POST'])
@@ -329,15 +431,17 @@ def get_strategy():
 
         time = data.get("yearsToAchieve")
         money = data.get("monthlyInvestment")
+        lumpsum = data.get("lumpsumInvestment")
 
         # Basic validation
-        if time is None or money is None:
-            return jsonify({"error": "yearsToAchieve and monthlyInvestment are required"}), 400
+        if time is None or money is None or lumpsum is None:
+            return jsonify({"error": "yearsToAchieve, monthlyInvestment, and lumpsumInvestment are required"}), 400
         try:
             time = float(time)
             money = int(money)
+            lumpsum = int(lumpsum)
         except Exception:
-            return jsonify({"error": "Invalid types for yearsToAchieve or monthlyInvestment"}), 400
+            return jsonify({"error": "Invalid types for yearsToAchieve, monthlyInvestment, or lumpsumInvestment"}), 400
 
         # Determine category (same logic as before)
         category = None
@@ -363,11 +467,19 @@ def get_strategy():
             elif time >= 6:
                 category = 33
 
+        if lumpsum == 0:
+            category = category * 10 + 0
+        elif 1000 <= lumpsum < 10000:
+            category = category * 10 + 1
+        elif lumpsum >= 10000:
+            category = category * 10 + 2
+
         if category is None:
             return jsonify({"message": "No matching category for the given inputs."}), 400
 
         # Fetch matching strategy docs
         docs = list(stratergy_collection.find({"type": category}))
+        print(docs)
         if not docs:
             return jsonify({"message": "No strategies found for the given criteria."}), 404
 
@@ -376,7 +488,7 @@ def get_strategy():
         for doc in docs:
             for s in (doc.get("strategies") or []):
                 alloc = s.get("allocation") or {}
-                computed = _compute_amounts_from_percentages(money, alloc)
+                computed = _compute_amounts_from_percentages(money, lumpsum, alloc)
 
                 out_strategies.append({
                     "name": s.get("name"),
@@ -385,10 +497,11 @@ def get_strategy():
                     "expectedReturn": s.get("expectedReturn"),
                     "maturityAmount": s.get("maturityAmount"),
                     "templateAllocation": alloc,                 # original template from DB
-                    "computedAllocation": {                      # final monthly split in ₹
-                        **computed["amounts"],
-                        **computed["percentages"],
-                        "totalMonthly": money
+                    "computedAllocation": {                      # final monthly and lumpsum split in ₹
+                        "monthlyAmounts": computed["monthlyAmounts"],
+                        "lumpsumAmounts": computed["lumpsumAmounts"],
+                        "totalMonthly": money,
+                        "totalLumpsum": lumpsum
                     },
                     "type": doc.get("type")
                 })
@@ -397,7 +510,7 @@ def get_strategy():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+    
 def set_response_store(task_id, data):
     redis_client.set(f"response_store:{task_id}", pickle.dumps(data), ex=3600)  # 1 hour expiry
 
