@@ -30,8 +30,8 @@ graph = builder.compile()
 # print(graph.get_graph().draw_mermaid())
 
 query_template = """
-Coin out 3-4 diverse strategies to improve investment of customer by balancing risk and returns.
-Your task is to divide funds between different instruments based on the user's investment interests.
+Coin out 3-4 diverse investment strategies to improve the customer's portfolio by balancing risk and returns.
+Divide funds between different instruments based on the user's investment interests and risk appetite.
 Available instruments are:
 - Growth
   - Mutual Funds 
@@ -47,7 +47,14 @@ user_inputs =
     "monthly_investment": Rs. {monthly_investment}
 }}
 
-What should be the strategy to divide the money between these instruments?
+Guidelines:
+- Provide at least one strategy for each risk level: "High", "Moderate", "Moderate-Low", "Low".
+- For each strategy, allocations for "monthly" and "lumpsum" must each sum to 100%.
+- All allocation percentages must be integers.
+- All currency values must be in the format "Rs. 123456" (no formulas).
+- Each strategy should have a clear, concise description explaining the rationale and risk/return tradeoff.
+- Use realistic, diverse allocations for each risk level.
+
 Give output in the following JSON format:
 {{
   "answer": {{
@@ -55,48 +62,22 @@ Give output in the following JSON format:
       {{
         "name": "...",
         "description": "...",
-        "allocation": [
-          "monthly": 
-          {{
-            "MutualFunds%": 50,
-            "ETFs%": 0,
-            "Bonds%": 0,
-            "SGBs%": 50,
+        "allocation": {{
+          "monthly": {{
+            "MutualFunds%": ...,
+            "ETFs%": ...,
+            "Bonds%": ...,
+            "SGBs%": ...,
           }},
-          "lumpsum":
-          {{
-            "MutualFunds%": 100,
-            "ETFs%": 0,
-            "Bonds%": 0,
-            "SGBs%": 0,
+          "lumpsum": {{
+            "MutualFunds%": ...,
+            "ETFs%": ...,
+            "Bonds%": ...,
+            "SGBs%": ...,
           }},
-        ],
-        "expectedReturn": "~10%",
-        "mautityAmount": [calculate the maturity amount based on expected return, investment horizon, lumpsum investment and monthly investment],
-        "riskLevel": "Moderate",
-      }},
-      {{
-        "name": "...",
-        "description": "...",
-        "allocation": [
-          "monthly": 
-          {{
-            "MutualFunds%": 50,
-            "ETFs%": 30,
-            "Bonds%": 20,
-            "SGBs%": 0,
-          }},
-          "lumpsum":
-          {{
-            "MutualFunds%": 0,
-            "ETFs%": 0,
-            "Bonds%": 100,
-            "SGBs%": 0,
-          }},
-        ],
-        "expectedReturn": "~8%",
-        "mautityAmount": [calculate the maturity amount based on expected return, investment horizon, lumpsum investment and monthly investment],
-        "riskLevel": "Low",
+        }},
+        "expectedReturn": "~12% annualised",
+        "riskLevel": "High"
       }},
       ...
     ]

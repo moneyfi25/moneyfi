@@ -11,6 +11,7 @@ import redis
 import json
 import pickle
 import re
+import unicodedata
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={
@@ -376,51 +377,124 @@ def add_stratergies():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def _compute_amounts_from_percentages(money: int, lumpsum: int, alloc: dict):
-    """Compute MF/ETF/Bond rupee amounts from percentage fields in `alloc`."""
-    # Read percentages for monthly and lumpsum allocations
-    monthly_alloc = alloc.get("monthly", {})
-    lumpsum_alloc = alloc.get("lumpsum", {})
+import re
+from typing import Tuple
 
-    # Extract percentages for monthly allocation
-    p_mf_monthly = monthly_alloc.get("MutualFunds%", 0)
-    p_etf_monthly = monthly_alloc.get("ETFs%", 0)
-    p_bond_monthly = monthly_alloc.get("Bonds%", 0)
-    p_sgb_monthly = monthly_alloc.get("SGBs%", 0)
+def _parse_expected_return(text: str | None, years_fallback: float) -> Tuple[float, float]:
+    """
+    Returns (annual_rate_float, years_used).
+    If 'total' is present, converts total return over T years to annualised (CAGR).
+    Otherwise treats % as annual rate.
+    """
+    if not text:
+        return 0.0, float(years_fallback or 0.0)
 
-    # Extract percentages for lumpsum allocation
-    p_mf_lumpsum = lumpsum_alloc.get("MutualFunds%", 0)
-    p_etf_lumpsum = lumpsum_alloc.get("ETFs%", 0)
-    p_bond_lumpsum = lumpsum_alloc.get("Bonds%", 0)
-    p_sgb_lumpsum = lumpsum_alloc.get("SGBs%", 0)
+    s = re.sub(r"\s+", " ", (text or "").strip().lower())
 
-    # Compute amounts for monthly allocation
-    amt_mf_monthly = int(round(money * (p_mf_monthly / 100.0)))
-    amt_etf_monthly = int(round(money * (p_etf_monthly / 100.0)))
-    amt_bond_monthly = int(round(money * (p_bond_monthly / 100.0)))
-    amt_sgb_monthly = int(round(money * (p_sgb_monthly / 100.0)))
+    # pick %; if a range like "10-12%" take the midpoint
+    nums = [float(x) for x in re.findall(r"(\d+(?:\.\d+)?)\s*%", s)]
+    if not nums:
+        pct = 0.0
+    elif len(nums) == 1:
+        pct = nums[0]
+    else:
+        pct = (min(nums) + max(nums)) / 2.0
+    pct /= 100.0
 
-    # Compute amounts for lumpsum allocation
-    amt_mf_lumpsum = int(round(lumpsum * (p_mf_lumpsum / 100.0)))
-    amt_etf_lumpsum = int(round(lumpsum * (p_etf_lumpsum / 100.0)))
-    amt_bond_lumpsum = int(round(lumpsum * (p_bond_lumpsum / 100.0)))
-    amt_sgb_lumpsum = int(round(lumpsum * (p_sgb_lumpsum / 100.0)))
+    # years (fallback if not present)
+    y = re.search(r"(\d+(?:\.\d+)?)\s*(?:years?|yrs?|yr|y)", s)
+    years = float(y.group(1)) if y else float(years_fallback or 0.0)
+
+    # detect modes
+    is_per_annum = any(k in s for k in ("p.a", "per annum", "pa", "cagr", "annualised", "annualized"))
+    is_total = ("total" in s or "cumulative" in s or "overall" in s) and not is_per_annum
+
+    if is_total and years > 0:
+        annual = (1.0 + pct) ** (1.0 / years) - 1.0
+    else:
+        annual = pct
+
+    return float(annual), float(years)
+
+def _monthly_rate(annual_rate: float) -> float:
+    """Convert effective annual rate to equivalent monthly rate."""
+    return (1.0 + float(annual_rate)) ** (1.0 / 12.0) - 1.0
+
+def _fv_sip(monthly: float, annual_rate: float, years: float, *, annuity_due: bool = False) -> float:
+    """Future value of a monthly SIP with monthly compounding."""
+    n = int(round(12 * max(years, 0)))
+    if n <= 0 or monthly <= 0:
+        return 0.0
+    r_m = _monthly_rate(annual_rate)
+    if abs(r_m) < 1e-12:
+        fv = monthly * n
+    else:
+        fv = monthly * (((1 + r_m) ** n - 1) / r_m)
+    return fv * (1 + r_m if annuity_due else 1.0)  # set annuity_due=True if you truly invest at start of month
+
+def _fv_lumpsum(amount: float, annual_rate: float, years: float) -> float:
+    """Future value of a lumpsum using the SAME monthly comp convention."""
+    n = int(round(12 * max(years, 0)))
+    if n <= 0 or amount <= 0:
+        return float(amount)
+    r_m = _monthly_rate(annual_rate)
+    return float(amount) * (1 + r_m) ** n
+
+def _compute_amounts_from_percentages(time: float, money: int, lumpsum: int, alloc: dict, expectedReturn: str) -> dict:
+    """Compute MF/ETF/Bond rupee amounts from percentage fields in `alloc`,
+    and compute maturity amounts from time, money, lumpsum, and expectedReturn."""
+    monthly_alloc = alloc.get("monthly", {}) or {}
+    lumpsum_alloc = alloc.get("lumpsum", {}) or {}
+
+    # monthly amounts
+    amt_mf_monthly  = int(round(money * (monthly_alloc.get("MutualFunds%", 0) / 100.0)))
+    amt_etf_monthly = int(round(money * (monthly_alloc.get("ETFs%",        0) / 100.0)))
+    amt_bond_monthly= int(round(money * (monthly_alloc.get("Bonds%",       0) / 100.0)))
+    amt_sgb_monthly = int(round(money * (monthly_alloc.get("SGBs%",        0) / 100.0)))
+
+    # lumpsum amounts
+    amt_mf_lumpsum  = int(round(lumpsum * (lumpsum_alloc.get("MutualFunds%", 0) / 100.0)))
+    amt_etf_lumpsum = int(round(lumpsum * (lumpsum_alloc.get("ETFs%",        0) / 100.0)))
+    amt_bond_lumpsum= int(round(lumpsum * (lumpsum_alloc.get("Bonds%",       0) / 100.0)))
+    amt_sgb_lumpsum = int(round(lumpsum * (lumpsum_alloc.get("SGBs%",        0) / 100.0)))
+
+    # returns / FV
+    annual_rate, years = _parse_expected_return(expectedReturn, time)
+
+    total_invested_monthly = int(round(max(money, 0) * 12 * max(years, 0)))
+    total_invested_lumpsum = int(round(max(lumpsum, 0)))
+    total_invested = total_invested_monthly + total_invested_lumpsum
+
+    # SIP assumed end-of-month; set annuity_due=True if you want start-of-month
+    fv_monthly = _fv_sip(float(money), float(annual_rate), float(years), annuity_due=False)
+    fv_lumpsum = _fv_lumpsum(float(lumpsum), float(annual_rate), float(years))
+    maturity_total = fv_monthly + fv_lumpsum
+    returns_amt = maturity_total - total_invested
 
     return {
         "monthlyAmounts": {
             "Mutual Funds": amt_mf_monthly,
             "ETFs": amt_etf_monthly,
             "Bonds": amt_bond_monthly,
-            "SGBs": amt_sgb_monthly
+            "SGBs": amt_sgb_monthly,
         },
         "lumpsumAmounts": {
             "Mutual Funds": amt_mf_lumpsum,
             "ETFs": amt_etf_lumpsum,
             "Bonds": amt_bond_lumpsum,
-            "SGBs": amt_sgb_lumpsum
+            "SGBs": amt_sgb_lumpsum,
         },
         "monthlyPercentages": monthly_alloc,
-        "lumpsumPercentages": lumpsum_alloc
+        "lumpsumPercentages": lumpsum_alloc,
+        "maturity": {
+            "TotalInvested": int(round(total_invested)),
+            "Returns": int(round(returns_amt)),
+            "MaturityAmount": int(round(maturity_total)),
+            "monthly_FV": int(round(fv_monthly)),
+            "lumpsum_FV": int(round(fv_lumpsum)),
+            "annualRateUsed": float(annual_rate),
+            "yearsUsed": float(years),
+        },
     }
 
 @app.route('/getStratergy', methods=['POST'])
@@ -452,14 +526,14 @@ def get_strategy():
                 category = 12
             elif time >= 6:
                 category = 13
-        elif 500 <= money < 10000:
+        elif 500 <= money < 10500:
             if 1 <= time < 3:
                 category = 21
             elif 3 <= time < 6:
                 category = 22
             elif time >= 6:
                 category = 23
-        elif money >= 10000:
+        elif money >= 10500:
             if 1 <= time < 3:
                 category = 31
             elif 3 <= time < 6:
@@ -467,11 +541,9 @@ def get_strategy():
             elif time >= 6:
                 category = 33
 
-        if lumpsum == 0:
-            category = category * 10 + 0
-        elif 1000 <= lumpsum < 10000:
+        if 1000 <= lumpsum < 10500:
             category = category * 10 + 1
-        elif lumpsum >= 10000:
+        elif lumpsum >= 10500:
             category = category * 10 + 2
 
         if category is None:
@@ -479,7 +551,6 @@ def get_strategy():
 
         # Fetch matching strategy docs
         docs = list(stratergy_collection.find({"type": category}))
-        print(docs)
         if not docs:
             return jsonify({"message": "No strategies found for the given criteria."}), 404
 
@@ -488,14 +559,14 @@ def get_strategy():
         for doc in docs:
             for s in (doc.get("strategies") or []):
                 alloc = s.get("allocation") or {}
-                computed = _compute_amounts_from_percentages(money, lumpsum, alloc)
-
+                expectedReturn = s.get("expectedReturn")
+                computed = _compute_amounts_from_percentages(time, money, lumpsum, alloc, expectedReturn)
                 out_strategies.append({
                     "name": s.get("name"),
                     "description": s.get("description"),
                     "riskLevel": s.get("riskLevel"),
                     "expectedReturn": s.get("expectedReturn"),
-                    "maturityAmount": s.get("maturityAmount"),
+                    "maturityAmount": computed["maturity"],  
                     "templateAllocation": alloc,                 # original template from DB
                     "computedAllocation": {                      # final monthly and lumpsum split in ₹
                         "monthlyAmounts": computed["monthlyAmounts"],

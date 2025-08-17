@@ -4,8 +4,8 @@ from stratergist.main import run_strategist_agent
 from db import stratergy_collection
 
 user_inputs = {
-    "lumpsum": 0,
-    "investment_horizon": "5 years",
+    "lumpsum": 15000,
+    "investment_horizon": "1 year",
     "monthly_investment": 5000
 }
 
@@ -13,7 +13,7 @@ user_inputs = {
 stratergy_data = run_strategist_agent(user_inputs)
 
 # Add a base type key to the strategy data
-base_type_id = 220  
+base_type_id = 212
 formatted_data = {
     "type": base_type_id,
     "strategies": stratergy_data["strategies"]
@@ -21,6 +21,7 @@ formatted_data = {
 
 # Insert the formatted strategy data into the database
 try:
+    stratergy_collection.delete_many({"type": base_type_id})  # Clear existing strategies with the same type_id
     result = stratergy_collection.insert_one(formatted_data)
     print(f"✅ Strategy added successfully with ID: {result.inserted_id}")
 except Exception as e:
