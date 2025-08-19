@@ -7,11 +7,12 @@ from threading import Lock
 import os
 from agent_entry import run_orc_agent
 from db import mutual_funds_collection, report_collection, stratergy_collection
+from why.main import mutual_fund_reasoner_tool
 import redis
 import json
 import pickle
 import re
-import unicodedata
+from urllib.parse import unquote
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={
@@ -44,6 +45,15 @@ def get_all_mutual_funds():
         fund["_id"] = str(fund["_id"])
         mutual_funds_list.append(fund)
     return jsonify({"mutual_funds": mutual_funds_list}), 200
+
+@app.route('/api/mutual_funds/<string:fund_name>', methods=['GET'])
+def get_mutual_fund_by_name(fund_name):
+    fund_name = unquote(fund_name)
+    fund = mutual_funds_collection.find_one({"fund_name": fund_name})
+    if not fund:
+        return jsonify({"error": "Mutual fund not found"}), 404
+    fund["_id"] = str(fund["_id"])
+    return jsonify({"mutual_fund": fund}), 200
 
 def run_orc_agent_with_callback(user_inputs, task_id):
     try:
