@@ -5,15 +5,15 @@ from db import stratergy_collection
 
 user_inputs = {
     "lumpsum": 15000,
-    "investment_horizon": "1 year",
-    "monthly_investment": 5000
+    "investment_horizon": "5 years",
+    "monthly_investment": 100
 }
 
 # Run the strategist agent to generate strategy data
 stratergy_data = run_strategist_agent(user_inputs)
 
 # Add a base type key to the strategy data
-base_type_id = 212
+base_type_id = 122
 formatted_data = {
     "type": base_type_id,
     "strategies": stratergy_data["strategies"]
@@ -51,7 +51,7 @@ for index, strategy in enumerate(formatted_data["strategies"], start=1):
         "sgb_lumpsum": lumpsum_allocation.get("SGBs%", 0) * user_inputs["lumpsum"] // 100,
         "risk": strategy["riskLevel"]  # Use risk level from strategy
     }
-
+    print(user_inputs_for_orc)
     # Run ORC agent
     try:
         orc_result = run_orc_agent(user_inputs_for_orc)

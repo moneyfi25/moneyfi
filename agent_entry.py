@@ -56,8 +56,11 @@ user_inputs = {{
 Instructions:
 1. Pass the user_inputs object as argument to the tools correctly without any error in values
 2. Use the tools to get the best mutual funds, ETFs, and bonds based on the user's inputs
-5. If any of {mutual_fund}, {etf}, {bond}, {sgb} is 0, then do not call the respective tool
-6. Do not summarize or filter any information from the tools output - include EACH and EVERY detailed information provided by the tools
+3. If both {mutual_fund} and {mutual_fund_lumpsum} are 0, skip mutual funds tool
+4. If both {etf} and {etf_lumpsum} are 0, skip ETFs tool
+5. If both {bond} and {bond_lumpsum} are 0, skip bonds tool
+6. If both {sgb} and {sgb_lumpsum} are 0, skip SGBs tool
+7. Do not summarize or filter any information from the tools output - include EACH and EVERY detailed information provided by the tools
 
 IMPORTANT: 
 - Do NOT skip any details provided by the tools
